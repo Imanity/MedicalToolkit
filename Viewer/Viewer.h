@@ -15,6 +15,7 @@ struct LayerItem {
 	QCheckBox *checkBox;
 	ClickableLabel *colorLabel;
 	ClickableLabel *label;
+	ClickableLabel *closeBtn;
 };
 
 class Viewer : public QMainWindow {
@@ -28,6 +29,11 @@ public slots:
 	void openDicomFile();
 	// 选中图层
 	void setCurrentLayer(int id);
+	// 删除图层
+	void deleteLayer(int id);
+
+	// 刷新所有控件
+	void updateAllViewers();
 
 	// 更新选定图层名
 	void updateLayerName(QString str);
@@ -48,8 +54,6 @@ private:
 	void updateLayers();
 	// 更新图层详细信息
 	void updateLayerDetail();
-	// 刷新所有控件
-	void updateAllViewers();
 
 private:
 	Ui::ViewerClass ui;
@@ -59,6 +63,7 @@ private:
 	Viewer3D *viewer3d;
 	QSignalMapper *visibleSignalMapper;
 	QSignalMapper *colorSignalMapper;
+	QSignalMapper *closeSignalMapper;
 	std::vector<LayerItem> layerItems;
 	int currentLayerId = 0;
 };

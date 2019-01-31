@@ -19,20 +19,25 @@ Viewer::Viewer(QWidget *parent)	: QMainWindow(parent) {
 	ui.sliceLayout3->addWidget(viewer_front);
 
 	ui.layerTable->setRowCount(0);
-	ui.layerTable->setColumnCount(3);
+	ui.layerTable->setColumnCount(4);
 	ui.layerTable->setShowGrid(false);
 	ui.layerTable->horizontalHeader()->setVisible(false);
 	ui.layerTable->verticalHeader()->setVisible(false);
 	ui.layerTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
-	ui.layerTable->setColumnWidth(0, 30);
-	ui.layerTable->setColumnWidth(1, 30);
 
 	visibleSignalMapper = new QSignalMapper(this);
 	colorSignalMapper = new QSignalMapper(this);
+	closeSignalMapper = new QSignalMapper(this);
 
 	ui.windowCenterVal->setValidator(new QIntValidator(1, 1000, this));
 	ui.windowWidthVal->setValidator(new QIntValidator(1, 1000, this));
 	ui.isoValueVal->setValidator(new QIntValidator(1, 1000, this));
+
+	ui.layerTable->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	ui.layerTable->setColumnWidth(0, 25);
+	ui.layerTable->setColumnWidth(1, 25);
+	ui.layerTable->setColumnWidth(2, 100);
+	ui.layerTable->setColumnWidth(3, 25);
 
 	connect(ui.actionOpenDicom, SIGNAL(triggered()), this, SLOT(openDicomFile()));
 	connect(ui.ambientSlider, SIGNAL(valueChanged(int)), viewer3d, SLOT(setAmbient(int)));
@@ -40,7 +45,9 @@ Viewer::Viewer(QWidget *parent)	: QMainWindow(parent) {
 	connect(ui.SpecularSlider, SIGNAL(valueChanged(int)), viewer3d, SLOT(setSpecular(int)));
 	connect(ui.renderComboBox, SIGNAL(currentIndexChanged(int)), viewer3d, SLOT(setRenderMode(int)));
 	connect(visibleSignalMapper, SIGNAL(mapped(int)), viewer3d, SLOT(setVisible(int)));
+	connect(visibleSignalMapper, SIGNAL(mapped(int)), this, SLOT(updateAllViewers()));
 	connect(colorSignalMapper, SIGNAL(mapped(int)), this, SLOT(setCurrentLayer(int)));
+	connect(closeSignalMapper, SIGNAL(mapped(int)), this, SLOT(deleteLayer(int)));
 	connect(ui.layerName, SIGNAL(textChanged(QString)), this, SLOT(updateLayerName(QString)));
 	connect(ui.colorR, SIGNAL(sliderReleased()), this, SLOT(updateLayerColor()));
 	connect(ui.colorG, SIGNAL(sliderReleased()), this, SLOT(updateLayerColor()));
@@ -71,7 +78,7 @@ void Viewer::openDicomFile() {
 
 void Viewer::updateLayers() {
 	int n = viewer3d->volumes.size();
-	ui.layerTable->setRowCount(n + 1);
+	ui.layerTable->setRowCount(n);
 
 	layerItems.clear();
 	ui.layerTable->clear();
@@ -88,6 +95,7 @@ void Viewer::updateLayers() {
 		newItem.colorLabel = new ClickableLabel(this);
 		newItem.colorLabel->setAutoFillBackground(true);
 		newItem.colorLabel->setStyleSheet("QLabel { border: 1px solid black; background-color : " + viewer3d->color[i].name() + "; }");
+		newItem.colorLabel->setCursor(Qt::PointingHandCursor);
 		ui.layerTable->setCellWidget(i, 1, newItem.colorLabel);
 		connect(newItem.colorLabel, SIGNAL(clicked()), colorSignalMapper, SLOT(map()));
 		colorSignalMapper->setMapping(newItem.colorLabel, i);
@@ -95,9 +103,18 @@ void Viewer::updateLayers() {
 		newItem.label = new ClickableLabel(this);
 		newItem.label->setStyleSheet("margin-left: 20px");
 		newItem.label->setText(viewer3d->title[i]);
+		newItem.label->setCursor(Qt::PointingHandCursor);
 		ui.layerTable->setCellWidget(i, 2, newItem.label);
 		connect(newItem.label, SIGNAL(clicked()), colorSignalMapper, SLOT(map()));
 		colorSignalMapper->setMapping(newItem.label, i);
+
+		newItem.closeBtn = new ClickableLabel(this);
+		newItem.closeBtn->setAutoFillBackground(true);
+		newItem.closeBtn->setPixmap(QPixmap("Resources/closeBtn.png"));
+		newItem.closeBtn->setCursor(Qt::PointingHandCursor);
+		ui.layerTable->setCellWidget(i, 3, newItem.closeBtn);
+		connect(newItem.closeBtn, SIGNAL(clicked()), closeSignalMapper, SLOT(map()));
+		closeSignalMapper->setMapping(newItem.closeBtn, i);
 
 		layerItems.push_back(newItem);
 	}
@@ -106,6 +123,13 @@ void Viewer::updateLayers() {
 void Viewer::setCurrentLayer(int id) {
 	currentLayerId = id;
 	updateLayerDetail();
+}
+
+void Viewer::deleteLayer(int id) {
+	int n = viewer3d->volumes.size();
+	viewer3d->deleteVolume(id);
+	updateAllViewers();
+	updateLayers();
 }
 
 void Viewer::updateLayerDetail() {
@@ -130,11 +154,15 @@ void Viewer::updateAllViewers() {
 }
 
 void Viewer::updateLayerName(QString str) {
+	if (currentLayerId < 0 || currentLayerId >= viewer3d->volumes.size())
+		return;
 	viewer3d->title[currentLayerId] = str;
 	updateLayers();
 }
 
 void Viewer::updateLayerColor() {
+	if (currentLayerId < 0 || currentLayerId >= viewer3d->volumes.size())
+		return;
 	viewer3d->color[currentLayerId].setRed(ui.colorR->value());
 	viewer3d->color[currentLayerId].setGreen(ui.colorG->value());
 	viewer3d->color[currentLayerId].setBlue(ui.colorB->value());
@@ -144,6 +172,8 @@ void Viewer::updateLayerColor() {
 }
 
 void Viewer::updateLayerWindowCenterVal() {
+	if (currentLayerId < 0 || currentLayerId >= viewer3d->volumes.size())
+		return;
 	int val = ui.windowCenter->value();
 	viewer3d->WindowCenter[currentLayerId] = val;
 	ui.windowCenterVal->setText(QString::number(val));
@@ -151,6 +181,8 @@ void Viewer::updateLayerWindowCenterVal() {
 }
 
 void Viewer::updateLayerWindowCenter() {
+	if (currentLayerId < 0 || currentLayerId >= viewer3d->volumes.size())
+		return;
 	int val = ui.windowCenterVal->text().toInt();
 	viewer3d->WindowCenter[currentLayerId] = val;
 	ui.windowCenter->setValue(val);
@@ -158,6 +190,8 @@ void Viewer::updateLayerWindowCenter() {
 }
 
 void Viewer::updateLayerWindowWidthVal() {
+	if (currentLayerId < 0 || currentLayerId >= viewer3d->volumes.size())
+		return;
 	int val = ui.windowWidth->value();
 	viewer3d->WindowWidth[currentLayerId] = val;
 	ui.windowWidthVal->setText(QString::number(val));
@@ -165,6 +199,8 @@ void Viewer::updateLayerWindowWidthVal() {
 }
 
 void Viewer::updateLayerWindowWidth() {
+	if (currentLayerId < 0 || currentLayerId >= viewer3d->volumes.size())
+		return;
 	int val = ui.windowWidthVal->text().toInt();
 	viewer3d->WindowWidth[currentLayerId] = val;
 	ui.windowWidth->setValue(val);
@@ -172,6 +208,8 @@ void Viewer::updateLayerWindowWidth() {
 }
 
 void Viewer::updateLayerIsoValueVal() {
+	if (currentLayerId < 0 || currentLayerId >= viewer3d->volumes.size())
+		return;
 	int val = ui.isoValue->value();
 	viewer3d->isoValue[currentLayerId] = val;
 	viewer3d->meshes[currentLayerId] = viewer3d->isoSurface(viewer3d->volumes[currentLayerId], val);
@@ -180,6 +218,8 @@ void Viewer::updateLayerIsoValueVal() {
 }
 
 void Viewer::updateLayerIsoValue() {
+	if (currentLayerId < 0 || currentLayerId >= viewer3d->volumes.size())
+		return;
 	int val = ui.isoValueVal->text().toInt();
 	viewer3d->isoValue[currentLayerId] = val;
 	viewer3d->meshes[currentLayerId] = viewer3d->isoSurface(viewer3d->volumes[currentLayerId], val);

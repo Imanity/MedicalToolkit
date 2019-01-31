@@ -118,6 +118,19 @@ void Viewer3D::addVolume(VolumeData<short> v, QString title) {
 	lenZ = (v.dz * v.nz) > lenZ ? (v.dz * v.nz) : lenZ;
 }
 
+void Viewer3D::deleteVolume(int idx) {
+	if (idx < 0 || idx >= volumes.size())
+		return;
+	volumes.erase(volumes.begin() + idx);
+	meshes.erase(meshes.begin() + idx);
+	visible.erase(visible.begin() + idx);
+	isoValue.erase(isoValue.begin() + idx);
+	WindowWidth.erase(WindowWidth.begin() + idx);
+	WindowCenter.erase(WindowCenter.begin() + idx);
+	color.erase(color.begin() + idx);
+	title.erase(title.begin() + idx);
+}
+
 vtkSmartPointer<vtkPolyData> Viewer3D::isoSurface(VolumeData<short> &v, int isoValue) {
 	vtkSmartPointer<vtkImageImport> image_import = vtkSmartPointer<vtkImageImport>::New();
 	image_import->SetDataSpacing(v.dx, v.dy, v.dz);
@@ -218,10 +231,13 @@ cv::Mat Viewer3D::generateSlice2d(int plane, double pos, int scale) {
 				double op = (double)(val - WindowCenter[i] + WindowWidth[i] / 2.0) / WindowWidth[i];
 				op = op < 0 ? 0 : op;
 				op = op > 1 ? 1 : op;
-				r = op * color[i].red();
-				g = op * color[i].green();
-				b = op * color[i].blue();
+				r += op * color[i].red();
+				g += op * color[i].green();
+				b += op * color[i].blue();
 			}
+			r = r > 255 ? 255 : r;
+			g = g > 255 ? 255 : g;
+			b = b > 255 ? 255 : b;
 			if (plane == TRANSVERSE_PLANE) {
 				img.at<cv::Vec3b>(y, x)[0] = r;
 				img.at<cv::Vec3b>(y, x)[1] = g;

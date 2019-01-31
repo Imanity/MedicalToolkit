@@ -39,6 +39,8 @@ public:
 	void updateView();
 	// 添加新体数据
 	void addVolume(VolumeData<short> v, QString title);
+	// 删除体数据
+	void deleteVolume(int idx);
 
 	// 生成二维切片视图
 	cv::Mat generateSlice2d(int plane, double pos, int scale);

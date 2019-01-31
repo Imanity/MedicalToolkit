@@ -25,6 +25,7 @@ void Viewer2D::updateView() {
 
 void Viewer2D::resizeEvent(QResizeEvent* event) {
 	updateView();
+	QWidget::resizeEvent(event);
 }
 
 void Viewer2D::wheelEvent(QWheelEvent* event) {
