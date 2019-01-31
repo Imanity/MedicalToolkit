@@ -18,6 +18,7 @@ Viewer3D::Viewer3D(QWidget *parent) : QVTKWidget(parent) {
 	ui.setupUi(this);
 
 	this->renderer = vtkSmartPointer<vtkRenderer>::New();
+	this->renderer->SetUseDepthPeeling(true);
 	this->GetRenderWindow()->AddRenderer(this->renderer);
 	this->GetRenderWindow()->Render();
 }
