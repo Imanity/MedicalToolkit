@@ -12,4 +12,4 @@ Integrated some common features.
 
 ### Intro
 * UI:
-<img src="/Gallary/main.png" />
+<img src="/Gallery/main.png" />
