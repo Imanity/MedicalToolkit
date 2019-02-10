@@ -40,6 +40,8 @@ Viewer::Viewer(QWidget *parent)	: QMainWindow(parent) {
 	ui.layerTable->setColumnWidth(3, 25);
 
 	connect(ui.actionOpenDicom, SIGNAL(triggered()), this, SLOT(openDicomFile()));
+	connect(ui.actionOpenNifti, SIGNAL(triggered()), this, SLOT(openNiftiFile()));
+	connect(ui.actionSaveNifti, SIGNAL(triggered()), this, SLOT(saveNiftiFile()));
 	connect(ui.ambientSlider, SIGNAL(valueChanged(int)), viewer3d, SLOT(setAmbient(int)));
 	connect(ui.diffuseSlider, SIGNAL(valueChanged(int)), viewer3d, SLOT(setDiffuse(int)));
 	connect(ui.SpecularSlider, SIGNAL(valueChanged(int)), viewer3d, SLOT(setSpecular(int)));
@@ -59,6 +61,8 @@ Viewer::Viewer(QWidget *parent)	: QMainWindow(parent) {
 	connect(ui.windowWidthVal, SIGNAL(editingFinished()), this, SLOT(updateLayerWindowWidth()));
 	connect(ui.isoValue, SIGNAL(sliderReleased()), this, SLOT(updateLayerIsoValueVal()));
 	connect(ui.isoValueVal, SIGNAL(editingFinished()), this, SLOT(updateLayerIsoValue()));
+	connect(ui.AxesCheckBox, SIGNAL(stateChanged(int)), this, SLOT(updateAxesVisible(int)));
+	connect(ui.SliceCheckBox, SIGNAL(stateChanged(int)), this, SLOT(updateSliceVisible(int)));
 }
 
 void Viewer::openDicomFile() {
@@ -72,8 +76,45 @@ void Viewer::openDicomFile() {
 	v.readFromDicom(fileToOpen.toStdString());
 	viewer3d->addVolume(v, QString("Image ") + QString::number(n + 1));
 
+	if (!n) {
+		viewer_front->pos = viewer3d->slicePos[0] = viewer3d->lenX / 2.0;
+		viewer_left->pos = viewer3d->slicePos[1] = viewer3d->lenY / 2.0;
+		viewer_up->pos = viewer3d->slicePos[2] = viewer3d->lenZ / 2.0;
+	}
+
 	updateAllViewers();
 	updateLayers();
+}
+
+void Viewer::openNiftiFile() {
+	QString fileToOpen = QFileDialog::getOpenFileName(this, "Open", "D:/Data/", "Nifti(*.nii)");
+	if (!fileToOpen.size())
+		return;
+
+	int n = viewer3d->volumes.size();
+
+	VolumeData<short> v;
+	v.readFromNII(fileToOpen.toStdString());
+	viewer3d->addVolume(v, QString("Image ") + QString::number(n + 1));
+
+	if (!n) {
+		viewer_front->pos = viewer3d->slicePos[0] = viewer3d->lenX / 2.0;
+		viewer_left->pos = viewer3d->slicePos[1] = viewer3d->lenY / 2.0;
+		viewer_up->pos = viewer3d->slicePos[2] = viewer3d->lenZ / 2.0;
+	}
+
+	updateAllViewers();
+	updateLayers();
+}
+
+void Viewer::saveNiftiFile() {
+	QString fileToSave = QFileDialog::getSaveFileName(this, "Save", "D:/Data/", "Nifti(*.nii)");
+	if (!fileToSave.size())
+		return;
+
+	if (currentLayerId >= viewer3d->volumes.size())
+		return;
+	viewer3d->volumes[currentLayerId].writeToNII(fileToSave.toStdString());
 }
 
 void Viewer::updateLayers() {
@@ -225,4 +266,14 @@ void Viewer::updateLayerIsoValue() {
 	viewer3d->meshes[currentLayerId] = viewer3d->isoSurface(viewer3d->volumes[currentLayerId], val);
 	ui.isoValue->setValue(val);
 	updateAllViewers();
+}
+
+void Viewer::updateAxesVisible(int state) {
+	viewer3d->axesFlag = state > 0;
+	viewer3d->updateView();
+}
+
+void Viewer::updateSliceVisible(int state) {
+	viewer3d->sliceFlag = state > 0;
+	viewer3d->updateView();
 }

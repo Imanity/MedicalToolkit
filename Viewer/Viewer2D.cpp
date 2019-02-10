@@ -36,5 +36,17 @@ void Viewer2D::wheelEvent(QWheelEvent* event) {
 		(plane == CORONAL_PLANE && pos < viewer3d->lenY - 1.0) || (plane == TRANSVERSE_PLANE && pos < viewer3d->lenZ - 1.0))) {
 		pos += 1.0;
 	}
+	switch (plane) {
+	case SAGITTAL_PLANE:
+		viewer3d->slicePos[0] = pos;
+		break;
+	case CORONAL_PLANE:
+		viewer3d->slicePos[1] = pos;
+		break;
+	case TRANSVERSE_PLANE:
+		viewer3d->slicePos[2] = pos;
+		break;
+	}
 	updateView();
+	viewer3d->updateView();
 }

@@ -23,9 +23,11 @@ public:
 	// 滚轮事件处理
 	void wheelEvent(QWheelEvent* event);
 
+public:
+	double pos = 0.0;
+
 private:
 	Ui::Viewer2D ui;
-	double pos = 20.0;
 
 	SLICE_PLANE plane;
 	Viewer3D *viewer3d;

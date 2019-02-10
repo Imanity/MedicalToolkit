@@ -27,6 +27,10 @@ public:
 public slots:
 	// 打开Dicom文件
 	void openDicomFile();
+	// 打开Nifti文件
+	void openNiftiFile();
+	// 导出Nifti文件
+	void saveNiftiFile();
 	// 选中图层
 	void setCurrentLayer(int id);
 	// 删除图层
@@ -48,6 +52,11 @@ public slots:
 	// 更新选定图层等值面取值
 	void updateLayerIsoValueVal();
 	void updateLayerIsoValue();
+
+	// 更新是否显示坐标轴
+	void updateAxesVisible(int);
+	// 更新是否显示3D切片
+	void updateSliceVisible(int);
 
 private:
 	// 更新所有图层信息

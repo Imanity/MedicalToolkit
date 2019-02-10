@@ -4,6 +4,7 @@
 #include <vtkSmartPointer.h>
 #include <vtkPolyData.h>
 #include <vtkRenderer.h>
+#include <vtkImageData.h>
 
 #include <opencv2/opencv.hpp>
 
@@ -44,6 +45,8 @@ public:
 
 	// 生成二维切片视图
 	cv::Mat generateSlice2d(int plane, double pos, int scale);
+	// 生成二维切片
+	vtkSmartPointer<vtkImageData> generateSlice2d(int plane, double pos);
 
 	// 等值面提取
 	vtkSmartPointer<vtkPolyData> isoSurface(VolumeData<short> &v, int isoValue);
@@ -68,6 +71,9 @@ private:
 
 public:
 	double lenX = 0, lenY = 0, lenZ = 0;
+	bool axesFlag = true;
+	bool sliceFlag = true;
+	double slicePos[3];
 
 public:
 	std::vector<VolumeData<short>> volumes;

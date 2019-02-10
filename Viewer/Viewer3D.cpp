@@ -13,11 +13,21 @@
 #include <vtkPolyDataConnectivityFilter.h>
 #include <vtkNew.h>
 #include <vtkSmoothPolyDataFilter.h>
+#include <vtkAxesActor.h>
+#include <vtkCaptionActor2D.h>
+#include <vtkProperty2D.h>
+#include <vtkTextProperty.h>
+#include <vtkTextActor.h>
+#include <vtkMatrix4x4.h>
+#include <vtkImageActor.h>
+#include <vtkImageMapper3D.h>
+#include <vtkTransform.h>
 
 Viewer3D::Viewer3D(QWidget *parent) : QVTKWidget(parent) {
 	ui.setupUi(this);
 
 	this->renderer = vtkSmartPointer<vtkRenderer>::New();
+	this->renderer->SetBackground(.2, .2, .2);
 	this->renderer->SetUseDepthPeeling(true);
 	this->GetRenderWindow()->AddRenderer(this->renderer);
 	this->GetRenderWindow()->Render();
@@ -73,7 +83,7 @@ void Viewer3D::updateView() {
 			vtkSmartPointer<vtkVolume> volumeVTK = vtkSmartPointer<vtkVolume>::New();
 			volumeVTK->SetMapper(volumeMapper);
 			volumeVTK->SetProperty(volumeProperty);
-			renderer->AddViewProp(volumeVTK);
+			this->renderer->AddViewProp(volumeVTK);
 		}
 	} else if (renderingMode == MESH_RENDERING) {
 		for (int i = 0; i < meshes.size(); ++i) {
@@ -96,7 +106,55 @@ void Viewer3D::updateView() {
 		}
 	}
 
-	if (isFirstRead) {
+	if (volumes.size() && axesFlag) {
+		vtkSmartPointer<vtkAxesActor> axes = vtkSmartPointer<vtkAxesActor>::New();
+		axes->SetPosition(0, 0, 0);
+		double maxLen = lenX > lenY ? (lenX > lenZ ? lenX : lenZ) : (lenY > lenZ ? lenY : lenZ);
+		axes->SetTotalLength(maxLen / 10.0, maxLen / 10.0, maxLen / 10.0);
+		axes->GetXAxisCaptionActor2D()->GetTextActor()->SetTextScaleMode(vtkTextActor::TEXT_SCALE_MODE_NONE);
+		axes->GetXAxisCaptionActor2D()->GetTextActor()->GetTextProperty()->SetFontSize(maxLen / 15);
+		axes->GetYAxisCaptionActor2D()->GetTextActor()->SetTextScaleMode(vtkTextActor::TEXT_SCALE_MODE_NONE);
+		axes->GetYAxisCaptionActor2D()->GetTextActor()->GetTextProperty()->SetFontSize(maxLen / 15);
+		axes->GetZAxisCaptionActor2D()->GetTextActor()->SetTextScaleMode(vtkTextActor::TEXT_SCALE_MODE_NONE);
+		axes->GetZAxisCaptionActor2D()->GetTextActor()->GetTextProperty()->SetFontSize(maxLen / 15);
+
+		this->renderer->AddActor(axes);
+	}
+
+	if (volumes.size() && sliceFlag) {
+		vtkSmartPointer<vtkTransform> transform_saggital = vtkSmartPointer<vtkTransform>::New();
+		transform_saggital->Identity();
+		transform_saggital->RotateY(90.0);
+		transform_saggital->RotateZ(90.0);
+		transform_saggital->Translate(0, 0, slicePos[0]);
+
+		vtkSmartPointer<vtkTransform> transform_coronal = vtkSmartPointer<vtkTransform>::New();
+		transform_coronal->Identity();
+		transform_coronal->RotateX(90.0);
+		transform_coronal->Translate(0, 0, -slicePos[1]);
+
+		vtkSmartPointer<vtkTransform> transform_transverse = vtkSmartPointer<vtkTransform>::New();
+		transform_transverse->Identity();
+		transform_transverse->Translate(0, 0, slicePos[2]);
+
+		vtkSmartPointer<vtkImageActor> actor_saggital = vtkSmartPointer<vtkImageActor>::New();
+		actor_saggital->GetMapper()->SetInputData(generateSlice2d(SAGITTAL_PLANE, slicePos[0]));
+		actor_saggital->SetUserTransform(transform_saggital);
+
+		vtkSmartPointer<vtkImageActor> actor_coronal = vtkSmartPointer<vtkImageActor>::New();
+		actor_coronal->GetMapper()->SetInputData(generateSlice2d(CORONAL_PLANE, slicePos[1]));
+		actor_coronal->SetUserTransform(transform_coronal);
+
+		vtkSmartPointer<vtkImageActor> actor_transverse = vtkSmartPointer<vtkImageActor>::New();
+		actor_transverse->GetMapper()->SetInputData(generateSlice2d(TRANSVERSE_PLANE, slicePos[2]));
+		actor_transverse->SetUserTransform(transform_transverse);
+
+		this->renderer->AddActor(actor_saggital);
+		this->renderer->AddActor(actor_coronal);
+		this->renderer->AddActor(actor_transverse);
+	}
+
+	if (isFirstRead && volumes.size()) {
 		this->renderer->ResetCamera();
 		isFirstRead = false;
 	}
@@ -211,7 +269,6 @@ cv::Mat Viewer3D::generateSlice2d(int plane, double pos, int scale) {
 			for (int i = 0; i < volumes.size(); ++i) {
 				if (!visible[i])
 					continue;
-
 				double xIndex = 0, yIndex = 0, zIndex = 0;
 				if (plane == SAGITTAL_PLANE) {
 					xIndex = (double)pos / volumes[i].dx;
@@ -251,6 +308,66 @@ cv::Mat Viewer3D::generateSlice2d(int plane, double pos, int scale) {
 		}
 	}
 	return img;
+}
+
+vtkSmartPointer<vtkImageData> Viewer3D::generateSlice2d(int plane, double pos) {
+	vtkSmartPointer<vtkImageData> image = vtkSmartPointer<vtkImageData>::New();
+	image->SetSpacing(1.0, 1.0, 1.0);
+	image->SetOrigin(0.0, 0.0, 0.0);
+	int nx, ny;
+	switch (plane) {
+	case SAGITTAL_PLANE:
+		nx = lenY, ny = lenZ;
+		break;
+	case CORONAL_PLANE:
+		nx = lenX, ny = lenZ;
+		break;
+	case TRANSVERSE_PLANE:
+		nx = lenX, ny = lenY;
+		break;
+	}
+	image->SetExtent(0, nx - 1, 0, ny - 1, 0, 0);
+	image->SetDimensions(nx, ny, 1);
+	image->AllocateScalars(VTK_UNSIGNED_CHAR, 3);
+	for (int x = 0; x < nx; ++x) for (int y = 0; y < ny; ++y) {
+		int r = 0, g = 0, b = 0;
+		for (int i = 0; i < volumes.size(); ++i) {
+			if (!visible[i])
+				continue;
+			double xIndex, yIndex, zIndex;
+			switch (plane) {
+			case SAGITTAL_PLANE:
+				xIndex = (double)pos / volumes[i].dx;
+				yIndex = (double)x / volumes[i].dy;
+				zIndex = (double)y / volumes[i].dz;
+				break;
+			case CORONAL_PLANE:
+				xIndex = (double)x / volumes[i].dx;
+				yIndex = (double)pos / volumes[i].dy;
+				zIndex = (double)y / volumes[i].dz;
+				break;
+			case TRANSVERSE_PLANE:
+				xIndex = (double)x / volumes[i].dx;
+				yIndex = (double)y / volumes[i].dy;
+				zIndex = (double)pos / volumes[i].dz;
+				break;
+			}
+			if (xIndex >= volumes[i].nx || yIndex >= volumes[i].ny || zIndex >= volumes[i].nz)
+				continue;
+			short val = volumes[i].trilinear(xIndex, yIndex, zIndex);
+			double op = (double)(val - WindowCenter[i] + WindowWidth[i] / 2.0) / WindowWidth[i];
+			op = op < 0 ? 0 : op;
+			op = op > 1 ? 1 : op;
+			r += op * color[i].red();
+			g += op * color[i].green();
+			b += op * color[i].blue();
+		}
+		image->SetScalarComponentFromDouble(x, y, 0, 0, r);
+		image->SetScalarComponentFromDouble(x, y, 0, 1, g);
+		image->SetScalarComponentFromDouble(x, y, 0, 2, b);
+	}
+	image->Modified();
+	return image;
 }
 
 void Viewer3D::setAmbient(int v) {

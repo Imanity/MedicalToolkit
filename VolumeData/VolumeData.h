@@ -107,7 +107,7 @@ void VolumeData<T>::readFromNII(std::string file_path) {
 	nvox = nx * ny * nz;
 	double spacings[3];
 	image->GetSpacing(spacings);
-	dx = spacings[0], dx = spacings[1], dx = spacings[2];
+	dx = spacings[0], dy = spacings[1], dz = spacings[2];
 	data = new T[nvox];
 	short * image_buf = static_cast<short *>(image->GetScalarPointer());
 	for (int i = 0; i < nvox; ++i)
