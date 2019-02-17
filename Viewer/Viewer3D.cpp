@@ -18,7 +18,6 @@
 #include <vtkProperty2D.h>
 #include <vtkTextProperty.h>
 #include <vtkTextActor.h>
-#include <vtkMatrix4x4.h>
 #include <vtkImageActor.h>
 #include <vtkImageMapper3D.h>
 #include <vtkTransform.h>
@@ -83,6 +82,7 @@ void Viewer3D::updateView() {
 			vtkSmartPointer<vtkVolume> volumeVTK = vtkSmartPointer<vtkVolume>::New();
 			volumeVTK->SetMapper(volumeMapper);
 			volumeVTK->SetProperty(volumeProperty);
+			volumeVTK->SetUserMatrix(transforms[i]);
 			this->renderer->AddViewProp(volumeVTK);
 		}
 	} else if (renderingMode == MESH_RENDERING) {
@@ -101,6 +101,7 @@ void Viewer3D::updateView() {
 			meshActor->GetProperty()->SetAmbient(ambient);
 			meshActor->GetProperty()->SetDiffuse(diffuse);
 			meshActor->GetProperty()->SetSpecular(specular);
+			meshActor->SetUserMatrix(transforms[i]);
 
 			this->renderer->AddActor(meshActor);
 		}
@@ -171,6 +172,9 @@ void Viewer3D::addVolume(VolumeData<short> v, QString title) {
 	WindowWidth.push_back(800);
 	color.push_back(QColor(255, 255, 255, 255));
 	visible.push_back(true);
+	vtkSmartPointer<vtkMatrix4x4> I = vtkSmartPointer<vtkMatrix4x4>::New();
+	I->Identity();
+	transforms.push_back(I);
 
 	lenX = (v.dx * v.nx) > lenX ? (v.dx * v.nx) : lenX;
 	lenY = (v.dy * v.ny) > lenY ? (v.dy * v.ny) : lenY;
@@ -188,6 +192,7 @@ void Viewer3D::deleteVolume(int idx) {
 	WindowCenter.erase(WindowCenter.begin() + idx);
 	color.erase(color.begin() + idx);
 	title.erase(title.begin() + idx);
+	transforms.erase(transforms.begin() + idx);
 }
 
 vtkSmartPointer<vtkPolyData> Viewer3D::isoSurface(VolumeData<short> &v, int isoValue) {
@@ -362,6 +367,9 @@ vtkSmartPointer<vtkImageData> Viewer3D::generateSlice2d(int plane, double pos) {
 			g += op * color[i].green();
 			b += op * color[i].blue();
 		}
+		r = r > 255 ? 255 : r;
+		g = g > 255 ? 255 : g;
+		b = b > 255 ? 255 : b;
 		image->SetScalarComponentFromDouble(x, y, 0, 0, r);
 		image->SetScalarComponentFromDouble(x, y, 0, 1, g);
 		image->SetScalarComponentFromDouble(x, y, 0, 2, b);

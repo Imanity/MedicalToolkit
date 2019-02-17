@@ -33,243 +33,295 @@
     <item>
      <layout class="QVBoxLayout" name="leftLayout" stretch="3,2">
       <item>
-       <layout class="QGridLayout" name="propertyLayout" columnstretch="1,3">
-        <property name="leftMargin">
-         <number>5</number>
+       <widget class="QTabWidget" name="tabWidget1">
+        <property name="currentIndex">
+         <number>1</number>
         </property>
-        <property name="topMargin">
-         <number>5</number>
-        </property>
-        <property name="rightMargin">
-         <number>5</number>
-        </property>
-        <property name="bottomMargin">
-         <number>5</number>
-        </property>
-        <item row="9" column="0">
-         <spacer name="verticalSpacer">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
+        <widget class="QWidget" name="Page1" native="true">
+         <attribute name="title">
+          <string>显示</string>
+         </attribute>
+         <layout class="QGridLayout" name="propertyLayout" columnstretch="1,3">
+          <property name="leftMargin">
+           <number>5</number>
           </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
+          <property name="topMargin">
+           <number>5</number>
           </property>
-         </spacer>
-        </item>
-        <item row="3" column="0">
-         <widget class="QLabel" name="colorGLabel">
-          <property name="text">
-           <string>G：</string>
+          <property name="rightMargin">
+           <number>5</number>
           </property>
-         </widget>
-        </item>
-        <item row="5" column="1">
-         <widget class="QSlider" name="alpha">
-          <property name="maximum">
-           <number>255</number>
+          <property name="bottomMargin">
+           <number>5</number>
           </property>
-          <property name="value">
-           <number>255</number>
-          </property>
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-         </widget>
-        </item>
-        <item row="4" column="1">
-         <widget class="QSlider" name="colorB">
-          <property name="maximum">
-           <number>255</number>
-          </property>
-          <property name="value">
-           <number>255</number>
-          </property>
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-         </widget>
-        </item>
-        <item row="4" column="0">
-         <widget class="QLabel" name="colorBLabel">
-          <property name="text">
-           <string>B：</string>
-          </property>
-         </widget>
-        </item>
-        <item row="6" column="0">
-         <widget class="QLabel" name="windowCenterLabel">
-          <property name="text">
-           <string>窗位：</string>
-          </property>
-         </widget>
-        </item>
-        <item row="7" column="1">
-         <layout class="QHBoxLayout" name="windowWidthLayout" stretch="5,1">
-          <item>
-           <widget class="QSlider" name="windowWidth">
-            <property name="minimum">
-             <number>1</number>
+          <item row="9" column="0">
+           <spacer name="verticalSpacer">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
             </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="colorGLabel">
+            <property name="text">
+             <string>G：</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="1">
+           <widget class="QSlider" name="alpha">
             <property name="maximum">
-             <number>1000</number>
-            </property>
-            <property name="singleStep">
-             <number>10</number>
-            </property>
-            <property name="pageStep">
-             <number>100</number>
+             <number>255</number>
             </property>
             <property name="value">
-             <number>800</number>
+             <number>255</number>
             </property>
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
            </widget>
           </item>
-          <item>
-           <widget class="QLineEdit" name="windowWidthVal">
-            <property name="text">
-             <string>800</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item row="6" column="1">
-         <layout class="QHBoxLayout" name="windowCenterLayout" stretch="5,1">
-          <item>
-           <widget class="QSlider" name="windowCenter">
-            <property name="minimum">
-             <number>1</number>
-            </property>
+          <item row="4" column="1">
+           <widget class="QSlider" name="colorB">
             <property name="maximum">
-             <number>1000</number>
-            </property>
-            <property name="singleStep">
-             <number>10</number>
-            </property>
-            <property name="pageStep">
-             <number>100</number>
+             <number>255</number>
             </property>
             <property name="value">
-             <number>200</number>
+             <number>255</number>
             </property>
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
            </widget>
           </item>
-          <item>
-           <widget class="QLineEdit" name="windowCenterVal">
+          <item row="4" column="0">
+           <widget class="QLabel" name="colorBLabel">
             <property name="text">
-             <string>200</string>
+             <string>B：</string>
             </property>
            </widget>
           </item>
-         </layout>
-        </item>
-        <item row="3" column="1">
-         <widget class="QSlider" name="colorG">
-          <property name="maximum">
-           <number>255</number>
-          </property>
-          <property name="value">
-           <number>255</number>
-          </property>
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="0">
-         <widget class="QLabel" name="layerNameLabel">
-          <property name="text">
-           <string>图层：</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <widget class="QLineEdit" name="layerName"/>
-        </item>
-        <item row="7" column="0">
-         <widget class="QLabel" name="windowWidthLabel">
-          <property name="text">
-           <string>窗宽：</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="1">
-         <widget class="QSlider" name="colorR">
-          <property name="maximum">
-           <number>255</number>
-          </property>
-          <property name="value">
-           <number>255</number>
-          </property>
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0">
-         <widget class="QLabel" name="colorRLabel">
-          <property name="text">
-           <string>R：</string>
-          </property>
-         </widget>
-        </item>
-        <item row="5" column="0">
-         <widget class="QLabel" name="alphaLabel">
-          <property name="text">
-           <string>透明度：</string>
-          </property>
-         </widget>
-        </item>
-        <item row="8" column="0">
-         <widget class="QLabel" name="isoValueLabel">
-          <property name="text">
-           <string>等值面</string>
-          </property>
-         </widget>
-        </item>
-        <item row="8" column="1">
-         <layout class="QHBoxLayout" name="isoValueLayout" stretch="5,1">
-          <item>
-           <widget class="QSlider" name="isoValue">
-            <property name="minimum">
-             <number>1</number>
+          <item row="6" column="0">
+           <widget class="QLabel" name="windowCenterLabel">
+            <property name="text">
+             <string>窗位：</string>
             </property>
+           </widget>
+          </item>
+          <item row="7" column="1">
+           <layout class="QHBoxLayout" name="windowWidthLayout" stretch="5,1">
+            <item>
+             <widget class="QSlider" name="windowWidth">
+              <property name="minimum">
+               <number>1</number>
+              </property>
+              <property name="maximum">
+               <number>1000</number>
+              </property>
+              <property name="singleStep">
+               <number>10</number>
+              </property>
+              <property name="pageStep">
+               <number>100</number>
+              </property>
+              <property name="value">
+               <number>800</number>
+              </property>
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="windowWidthVal">
+              <property name="text">
+               <string>800</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item row="6" column="1">
+           <layout class="QHBoxLayout" name="windowCenterLayout" stretch="5,1">
+            <item>
+             <widget class="QSlider" name="windowCenter">
+              <property name="minimum">
+               <number>1</number>
+              </property>
+              <property name="maximum">
+               <number>1000</number>
+              </property>
+              <property name="singleStep">
+               <number>10</number>
+              </property>
+              <property name="pageStep">
+               <number>100</number>
+              </property>
+              <property name="value">
+               <number>200</number>
+              </property>
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="windowCenterVal">
+              <property name="text">
+               <string>200</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item row="3" column="1">
+           <widget class="QSlider" name="colorG">
             <property name="maximum">
-             <number>1000</number>
-            </property>
-            <property name="singleStep">
-             <number>10</number>
-            </property>
-            <property name="pageStep">
-             <number>100</number>
+             <number>255</number>
             </property>
             <property name="value">
-             <number>200</number>
+             <number>255</number>
             </property>
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
            </widget>
           </item>
-          <item>
-           <widget class="QLineEdit" name="isoValueVal">
+          <item row="0" column="0">
+           <widget class="QLabel" name="layerNameLabel">
             <property name="text">
-             <string>200</string>
+             <string>图层：</string>
             </property>
            </widget>
           </item>
+          <item row="0" column="1">
+           <widget class="QLineEdit" name="layerName"/>
+          </item>
+          <item row="7" column="0">
+           <widget class="QLabel" name="windowWidthLabel">
+            <property name="text">
+             <string>窗宽：</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QSlider" name="colorR">
+            <property name="maximum">
+             <number>255</number>
+            </property>
+            <property name="value">
+             <number>255</number>
+            </property>
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="colorRLabel">
+            <property name="text">
+             <string>R：</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0">
+           <widget class="QLabel" name="alphaLabel">
+            <property name="text">
+             <string>透明度：</string>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="0">
+           <widget class="QLabel" name="isoValueLabel">
+            <property name="text">
+             <string>等值面</string>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="1">
+           <layout class="QHBoxLayout" name="isoValueLayout" stretch="5,1">
+            <item>
+             <widget class="QSlider" name="isoValue">
+              <property name="minimum">
+               <number>1</number>
+              </property>
+              <property name="maximum">
+               <number>1000</number>
+              </property>
+              <property name="singleStep">
+               <number>10</number>
+              </property>
+              <property name="pageStep">
+               <number>100</number>
+              </property>
+              <property name="value">
+               <number>200</number>
+              </property>
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="isoValueVal">
+              <property name="text">
+               <string>200</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
          </layout>
-        </item>
-       </layout>
+        </widget>
+        <widget class="QWidget" name="Page2">
+         <attribute name="title">
+          <string>变形</string>
+         </attribute>
+         <layout class="QGridLayout" name="transformLayout" columnstretch="1,3">
+          <property name="leftMargin">
+           <number>5</number>
+          </property>
+          <property name="topMargin">
+           <number>5</number>
+          </property>
+          <property name="rightMargin">
+           <number>5</number>
+          </property>
+          <property name="bottomMargin">
+           <number>5</number>
+          </property>
+          <item row="0" column="0">
+           <widget class="QLabel" name="layerName1">
+            <property name="text">
+             <string>图层：</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLineEdit" name="layerNameLabel1"/>
+          </item>
+          <item row="1" column="0">
+           <spacer name="verticalSpacer_2">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </widget>
+       </widget>
       </item>
       <item>
        <layout class="QVBoxLayout" name="settingLayout">

@@ -5,6 +5,7 @@
 #include <vtkPolyData.h>
 #include <vtkRenderer.h>
 #include <vtkImageData.h>
+#include <vtkMatrix4x4.h>
 
 #include <opencv2/opencv.hpp>
 
@@ -84,4 +85,5 @@ public:
 	std::vector<int> WindowCenter;
 	std::vector<QColor> color;
 	std::vector<QString> title;
+	std::vector<vtkSmartPointer<vtkMatrix4x4>> transforms;
 };
