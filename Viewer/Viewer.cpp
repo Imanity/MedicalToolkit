@@ -29,8 +29,8 @@ Viewer::Viewer(QWidget *parent)	: QMainWindow(parent) {
 	colorSignalMapper = new QSignalMapper(this);
 	closeSignalMapper = new QSignalMapper(this);
 
-	ui.windowCenterVal->setValidator(new QIntValidator(1, 1000, this));
-	ui.windowWidthVal->setValidator(new QIntValidator(1, 1000, this));
+	ui.windowCenterVal->setValidator(new QIntValidator(1, 2000, this));
+	ui.windowWidthVal->setValidator(new QIntValidator(1, 4000, this));
 	ui.isoValueVal->setValidator(new QIntValidator(1, 1000, this));
 
 	ui.layerTable->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -174,6 +174,7 @@ void Viewer::deleteLayer(int id) {
 }
 
 void Viewer::updateLayerDetail() {
+	// Tab 1
 	ui.layerName->setText(viewer3d->title[currentLayerId]);
 	ui.colorR->setValue(viewer3d->color[currentLayerId].red());
 	ui.colorG->setValue(viewer3d->color[currentLayerId].green());
@@ -185,6 +186,9 @@ void Viewer::updateLayerDetail() {
 	ui.windowWidthVal->setText(QString::number(viewer3d->WindowWidth[currentLayerId]));
 	ui.isoValue->setValue(viewer3d->isoValue[currentLayerId]);
 	ui.isoValueVal->setText(QString::number(viewer3d->isoValue[currentLayerId]));
+
+	// Tab 2
+	ui.layerName1->setText(viewer3d->title[currentLayerId]);
 }
 
 void Viewer::updateAllViewers() {

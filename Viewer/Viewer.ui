@@ -37,7 +37,7 @@
         <property name="currentIndex">
          <number>1</number>
         </property>
-        <widget class="QWidget" name="Page1" native="true">
+        <widget class="QWidget" name="Page1">
          <attribute name="title">
           <string>显示</string>
          </attribute>
@@ -122,7 +122,7 @@
                <number>1</number>
               </property>
               <property name="maximum">
-               <number>1000</number>
+               <number>4000</number>
               </property>
               <property name="singleStep">
                <number>10</number>
@@ -155,7 +155,7 @@
                <number>1</number>
               </property>
               <property name="maximum">
-               <number>1000</number>
+               <number>2000</number>
               </property>
               <property name="singleStep">
                <number>10</number>
@@ -297,14 +297,14 @@
            <number>5</number>
           </property>
           <item row="0" column="0">
-           <widget class="QLabel" name="layerName1">
+           <widget class="QLabel" name="layerNameLabel1">
             <property name="text">
              <string>图层：</string>
             </property>
            </widget>
           </item>
           <item row="0" column="1">
-           <widget class="QLineEdit" name="layerNameLabel1"/>
+           <widget class="QLineEdit" name="layerName1"/>
           </item>
           <item row="1" column="0">
            <spacer name="verticalSpacer_2">
