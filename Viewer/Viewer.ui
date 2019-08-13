@@ -81,7 +81,7 @@
            </widget>
           </item>
           <item row="5" column="1">
-           <widget class="QSlider" name="alpha">
+           <widget class="QSlider" name="colorAlpha">
             <property name="maximum">
              <number>255</number>
             </property>
@@ -285,6 +285,33 @@
           </item>
          </layout>
         </widget>
+        <widget class="QWidget" name="PagePicking">
+         <attribute name="title">
+          <string>页</string>
+         </attribute>
+         <layout class="QGridLayout" name="gridLayout">
+          <item row="0" column="0">
+           <widget class="QPushButton" name="pickingBtn">
+            <property name="text">
+             <string>开始选择</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <spacer name="verticalSpacer_3">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </widget>
         <widget class="QWidget" name="PageManualDSARegister">
          <property name="enabled">
           <bool>true</bool>
@@ -292,7 +319,7 @@
          <attribute name="title">
           <string>手动DSA配准</string>
          </attribute>
-         <layout class="QGridLayout" name="transformLayout" columnstretch="1,1">
+         <layout class="QGridLayout" name="transformLayout" columnstretch="1,0">
           <property name="leftMargin">
            <number>5</number>
           </property>
@@ -323,7 +350,20 @@
             </item>
            </layout>
           </item>
-          <item row="4" column="0">
+          <item row="2" column="1">
+           <widget class="QSlider" name="frameSlider">
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>1</number>
+            </property>
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
            <spacer name="verticalSpacer_2">
             <property name="orientation">
              <enum>Qt::Vertical</enum>
@@ -347,26 +387,6 @@
            <widget class="QPushButton" name="openDSABtn">
             <property name="text">
              <string>打开DSA文件</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <widget class="QSlider" name="frameSlider">
-            <property name="minimum">
-             <number>1</number>
-            </property>
-            <property name="maximum">
-             <number>1</number>
-            </property>
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="0">
-           <widget class="QPushButton" name="highLightBtn">
-            <property name="text">
-             <string>选择高亮</string>
             </property>
            </widget>
           </item>
@@ -592,6 +612,8 @@
      <string>操作</string>
     </property>
     <addaction name="actionExtractVessel"/>
+    <addaction name="separator"/>
+    <addaction name="actionVolumePick"/>
    </widget>
    <widget class="QMenu" name="menuRegister">
     <property name="title">
@@ -638,6 +660,16 @@
   <action name="actionManualRegisterDSA">
    <property name="text">
     <string>手动DSA配准</string>
+   </property>
+  </action>
+  <action name="actionLaplacianSmooth">
+   <property name="text">
+    <string>拉普拉斯平滑</string>
+   </property>
+  </action>
+  <action name="actionVolumePick">
+   <property name="text">
+    <string>体数据拾取</string>
    </property>
   </action>
  </widget>

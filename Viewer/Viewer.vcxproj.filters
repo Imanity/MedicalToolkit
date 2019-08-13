@@ -28,12 +28,6 @@
       <Extensions>moc;h;cpp</Extensions>
       <SourceControlFiles>False</SourceControlFiles>
     </Filter>
-    <Filter Include="Source Files\Widgets">
-      <UniqueIdentifier>{d427193b-9da8-40e5-95c1-8613dace0017}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Widgets">
-      <UniqueIdentifier>{8c812fc0-919b-43f5-abc6-2b28c2047c2c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Dialogs">
       <UniqueIdentifier>{beea5ac6-64a8-4c6c-8762-14df0aff2d7e}</UniqueIdentifier>
     </Filter>
@@ -43,11 +37,11 @@
     <Filter Include="Form Files\Dialogs">
       <UniqueIdentifier>{d24e2fe5-9fee-4489-993f-76977f4f732c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Functions">
-      <UniqueIdentifier>{15c97b45-7aa0-4bbe-838a-ac9ffd99df33}</UniqueIdentifier>
+    <Filter Include="Source Files\Widgets">
+      <UniqueIdentifier>{fd5d302a-f943-4a4e-b0e3-266bd86dc738}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Functions">
-      <UniqueIdentifier>{261dc5dc-6711-4648-b107-49701ec1bb55}</UniqueIdentifier>
+    <Filter Include="Header Files\Widgets">
+      <UniqueIdentifier>{7cccd54b-ad8c-47bf-b0d7-3fd90cf5f103}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -63,17 +57,14 @@
     <ClCompile Include="Viewer2D.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ClickableLabel.cpp">
-      <Filter>Source Files\Widgets</Filter>
-    </ClCompile>
     <ClCompile Include="Dialogs\DialogVesselExtractor.cpp">
       <Filter>Source Files\Dialogs</Filter>
     </ClCompile>
-    <ClCompile Include="Functions\VesselExtractor.cpp">
-      <Filter>Source Files\Functions</Filter>
-    </ClCompile>
     <ClCompile Include="MouseInteractorStyle.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Widgets\ClickableLabel.cpp">
+      <Filter>Source Files\Widgets</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -86,14 +77,14 @@
     <QtMoc Include="Viewer2D.h">
       <Filter>Header Files</Filter>
     </QtMoc>
-    <QtMoc Include="ClickableLabel.h">
-      <Filter>Header Files\Widgets</Filter>
-    </QtMoc>
     <QtMoc Include="Dialogs\DialogVesselExtractor.h">
       <Filter>Header Files\Dialogs</Filter>
     </QtMoc>
     <QtMoc Include="MouseInteractorSytle.h">
       <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="Widgets\ClickableLabel.h">
+      <Filter>Header Files\Widgets</Filter>
     </QtMoc>
   </ItemGroup>
   <ItemGroup>
@@ -117,10 +108,5 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Viewer.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="Functions\VesselExtractor.h">
-      <Filter>Header Files\Functions</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>

@@ -69,7 +69,7 @@
     <QtMoc>
       <OutputFile>.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</OutputFile>
       <ExecutionDescription>Moc'ing %(Identity)...</ExecutionDescription>
-      <IncludePath>.\GeneratedFiles;.;$(QTDIR)\include;.\GeneratedFiles\$(ConfigurationName);$(QTDIR)\include\QtCore;$(QTDIR)\include\QtGui;$(QTDIR)\include\QtANGLE;$(QTDIR)\include\QtWidgets;.\Dialogs;%(AdditionalIncludeDirectories)</IncludePath>
+      <IncludePath>.\GeneratedFiles;.;$(QTDIR)\include;.\GeneratedFiles\$(ConfigurationName)\.;$(QTDIR)\include\QtCore;$(QTDIR)\include\QtGui;$(QTDIR)\include\QtANGLE;$(QTDIR)\include\QtWidgets;.\Dialogs</IncludePath>
       <Define>UNICODE;_UNICODE;WIN32;WIN64;QT_CORE_LIB;QT_GUI_LIB;QT_WIDGETS_LIB</Define>
     </QtMoc>
     <QtUic>
@@ -101,7 +101,7 @@
     <QtMoc>
       <OutputFile>.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</OutputFile>
       <ExecutionDescription>Moc'ing %(Identity)...</ExecutionDescription>
-      <IncludePath>.\GeneratedFiles;.;$(QTDIR)\include;.\GeneratedFiles\$(ConfigurationName);$(QTDIR)\include\QtCore;$(QTDIR)\include\QtGui;$(QTDIR)\include\QtANGLE;$(QTDIR)\include\QtWidgets;..\External\vtk\include;..\External\Eigen;..\External\opencv\build\include;.\Dialogs;%(AdditionalIncludeDirectories)</IncludePath>
+      <IncludePath>.\GeneratedFiles;.;$(QTDIR)\include;.\GeneratedFiles\$(ConfigurationName)\.;$(QTDIR)\include\QtCore;$(QTDIR)\include\QtGui;$(QTDIR)\include\QtANGLE;$(QTDIR)\include\QtWidgets;.\..\External\vtk\include;.\..\External\Eigen;.\..\External\opencv\build\include;.\Dialogs</IncludePath>
       <Define>UNICODE;_UNICODE;WIN32;WIN64;QT_NO_DEBUG;NDEBUG;QT_CORE_LIB;QT_GUI_LIB;QT_WIDGETS_LIB</Define>
     </QtMoc>
     <QtUic>
@@ -114,14 +114,13 @@
     </QtRcc>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="ClickableLabel.cpp" />
     <ClCompile Include="Dialogs\DialogVesselExtractor.cpp" />
-    <ClCompile Include="Functions\VesselExtractor.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MouseInteractorStyle.cpp" />
     <ClCompile Include="Viewer.cpp" />
     <ClCompile Include="Viewer2D.cpp" />
     <ClCompile Include="Viewer3D.cpp" />
+    <ClCompile Include="Widgets\ClickableLabel.cpp" />
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="Viewer.h" />
@@ -142,6 +141,9 @@
     <ProjectReference Include="..\DicomReader\DicomReader.vcxproj">
       <Project>{b5db5c14-d90e-4f0a-a38d-d3c42c5ec301}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\VesselExtract\VesselExtract.vcxproj">
+      <Project>{c3e89017-0126-438d-890b-00eddd6e7f57}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\VolumeData\VolumeData.vcxproj">
       <Project>{163eca01-b1c9-48e0-9390-8d40644ae2c3}</Project>
     </ProjectReference>
@@ -153,17 +155,13 @@
     <QtMoc Include="Viewer2D.h" />
   </ItemGroup>
   <ItemGroup>
-    <QtMoc Include="ClickableLabel.h" />
-  </ItemGroup>
-  <ItemGroup>
     <QtMoc Include="Dialogs\DialogVesselExtractor.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Functions\VesselExtractor.h" />
-    <QtMoc Include="MouseInteractorSytle.h">
-      <IncludePath Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.\GeneratedFiles;.;$(QTDIR)\include;.\GeneratedFiles\$(ConfigurationName)\.;$(QTDIR)\include\QtCore;$(QTDIR)\include\QtGui;$(QTDIR)\include\QtANGLE;$(QTDIR)\include\QtWidgets;.\Dialogs</IncludePath>
-      <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.\GeneratedFiles;.;$(QTDIR)\include;.\GeneratedFiles\$(ConfigurationName)\.;$(QTDIR)\include\QtCore;$(QTDIR)\include\QtGui;$(QTDIR)\include\QtANGLE;$(QTDIR)\include\QtWidgets;.\..\External\vtk\include;.\..\External\Eigen;.\..\External\opencv\build\include;.\Dialogs</IncludePath>
-    </QtMoc>
+    <QtMoc Include="MouseInteractorSytle.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <QtMoc Include="Widgets\ClickableLabel.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">
@@ -173,7 +171,7 @@
   </ImportGroup>
   <ProjectExtensions>
     <VisualStudio>
-      <UserProperties MocDir=".\GeneratedFiles\$(ConfigurationName)" UicDir=".\GeneratedFiles" RccDir=".\GeneratedFiles" lupdateOptions="" lupdateOnBuild="0" lreleaseOptions="" Qt5Version_x0020_x64="5.11.1" MocOptions="" />
+      <UserProperties MocDir=".\GeneratedFiles\$(ConfigurationName)" UicDir=".\GeneratedFiles" RccDir=".\GeneratedFiles" lupdateOptions="" lupdateOnBuild="0" lreleaseOptions="" Qt5Version_x0020_x64="$(DefaultQtVersion)" MocOptions="" />
     </VisualStudio>
   </ProjectExtensions>
 </Project>

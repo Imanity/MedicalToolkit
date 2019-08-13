@@ -1,10 +1,9 @@
 #include "Viewer.h"
 
-#include "../VolumeData/VolumeData.h"
-
 #include "Dialogs/DialogVesselExtractor.h"
 
-#include "Functions/VesselExtractor.h"
+#include "../VolumeData/VolumeData.h"
+#include "../VesselExtract/VesselExtract.h"
 
 #include <QFileDialog>
 #include <QSizePolicy>
@@ -43,13 +42,16 @@ Viewer::Viewer(QWidget *parent)	: QMainWindow(parent) {
 	ui.layerTable->setColumnWidth(2, 100);
 	ui.layerTable->setColumnWidth(3, 25);
 
+	pagePicking = ui.PagePicking;
 	pageDSAManualRegister = ui.PageManualDSARegister;
+	ui.tabWidget1->removeTab(2);
 	ui.tabWidget1->removeTab(1);
 
 	connect(ui.actionOpenDicom, SIGNAL(triggered()), this, SLOT(onOpenDicomFile()));
 	connect(ui.actionOpenNifti, SIGNAL(triggered()), this, SLOT(onOpenNiftiFile()));
 	connect(ui.actionSaveNifti, SIGNAL(triggered()), this, SLOT(onSaveNiftiFile()));
 	connect(ui.actionExtractVessel, SIGNAL(triggered()), this, SLOT(onExtractVessel()));
+	connect(ui.actionVolumePick, SIGNAL(triggered()), this, SLOT(onVolumePicking()));
 	connect(ui.actionManualRegisterDSA, SIGNAL(triggered()), this, SLOT(onManualRegisterDSA()));
 	connect(ui.ambientSlider, SIGNAL(valueChanged(int)), viewer3d, SLOT(setAmbient(int)));
 	connect(ui.diffuseSlider, SIGNAL(valueChanged(int)), viewer3d, SLOT(setDiffuse(int)));
@@ -63,7 +65,7 @@ Viewer::Viewer(QWidget *parent)	: QMainWindow(parent) {
 	connect(ui.colorR, SIGNAL(sliderReleased()), this, SLOT(updateLayerColor()));
 	connect(ui.colorG, SIGNAL(sliderReleased()), this, SLOT(updateLayerColor()));
 	connect(ui.colorB, SIGNAL(sliderReleased()), this, SLOT(updateLayerColor()));
-	connect(ui.alpha, SIGNAL(sliderReleased()), this, SLOT(updateLayerColor()));
+	connect(ui.colorAlpha, SIGNAL(sliderReleased()), this, SLOT(updateLayerColor()));
 	connect(ui.windowCenter, SIGNAL(sliderReleased()), this, SLOT(updateLayerWindowCenterVal()));
 	connect(ui.windowCenterVal, SIGNAL(editingFinished()), this, SLOT(updateLayerWindowCenter()));
 	connect(ui.windowWidth, SIGNAL(sliderReleased()), this, SLOT(updateLayerWindowWidthVal()));
@@ -75,7 +77,6 @@ Viewer::Viewer(QWidget *parent)	: QMainWindow(parent) {
 	connect(ui.openDSABtn, SIGNAL(clicked()), this, SLOT(onOpenDSAFile()));
 	connect(ui.generateCameraBtn, SIGNAL(clicked()), this, SLOT(onGenerateCamera()));
 	connect(ui.frameSlider, SIGNAL(valueChanged(int)), this, SLOT(updateFrame(int)));
-	connect(ui.highLightBtn, SIGNAL(clicked()), this, SLOT(updateHighlight()));
 }
 
 void Viewer::onOpenDicomFile() {
@@ -135,6 +136,25 @@ void Viewer::onExtractVessel() {
 	dialog->show();
 }
 
+void Viewer::onVolumePicking() {
+	ui.tabWidget1->addTab(pagePicking, QString::fromLocal8Bit("体数据拾取"));
+	ui.tabWidget1->setCurrentIndex(1);
+
+	int n = viewer3d->volumes.size();
+	VolumeData<short> v(viewer3d->volumes[currentLayerId].nx, viewer3d->volumes[currentLayerId].ny, viewer3d->volumes[currentLayerId].nz, 
+		viewer3d->volumes[currentLayerId].dx, viewer3d->volumes[currentLayerId].dy, viewer3d->volumes[currentLayerId].dz);
+	for (int i = 0; i < v.nvox; ++i) {
+		v.data[i] = 0;
+	}
+	viewer3d->addVolume(v, QString("Image ") + QString::number(n + 1));
+	pickedLayerId = n;
+	viewer3d->color[n].setRed(0);
+	viewer3d->color[n].setBlue(0);
+
+	updateAllViewers();
+	updateLayers();
+}
+
 void Viewer::onManualRegisterDSA() {
 	ui.tabWidget1->addTab(pageDSAManualRegister, QString::fromLocal8Bit("手动DSA配准"));
 	ui.tabWidget1->setCurrentIndex(1);
@@ -186,6 +206,9 @@ void Viewer::updateLayers() {
 
 void Viewer::setCurrentLayer(int id) {
 	currentLayerId = id;
+	for (int i = 0; i < 3; ++i) {
+		ui.layerTable->cellWidget(id, i)->setStyleSheet("background-color: rgb(200, 200, 255);");
+	}
 	updateLayerDetail();
 }
 
@@ -201,7 +224,7 @@ void Viewer::updateLayerDetail() {
 	ui.colorR->setValue(viewer3d->color[currentLayerId].red());
 	ui.colorG->setValue(viewer3d->color[currentLayerId].green());
 	ui.colorB->setValue(viewer3d->color[currentLayerId].blue());
-	ui.alpha->setValue(viewer3d->color[currentLayerId].alpha());
+	ui.colorAlpha->setValue(viewer3d->color[currentLayerId].alpha());
 	ui.windowCenter->setValue(viewer3d->WindowCenter[currentLayerId]);
 	ui.windowCenterVal->setText(QString::number(viewer3d->WindowCenter[currentLayerId]));
 	ui.windowWidth->setValue(viewer3d->WindowWidth[currentLayerId]);
@@ -230,7 +253,7 @@ void Viewer::updateLayerColor() {
 	viewer3d->color[currentLayerId].setRed(ui.colorR->value());
 	viewer3d->color[currentLayerId].setGreen(ui.colorG->value());
 	viewer3d->color[currentLayerId].setBlue(ui.colorB->value());
-	viewer3d->color[currentLayerId].setAlpha(ui.alpha->value());
+	viewer3d->color[currentLayerId].setAlpha(ui.colorAlpha->value());
 	updateLayers();
 	updateAllViewers();
 }
@@ -302,7 +325,7 @@ void Viewer::updateSliceVisible(int state) {
 }
 
 void Viewer::extractVessel(int nonContrastId, int enhanceId) {
-	VesselExtractor extractor;
+	VesselExtract extractor;
 	VolumeData<short> v = extractor.getOutput(viewer3d->volumes[nonContrastId], viewer3d->volumes[enhanceId]);
 
 	viewer3d->addVolume(v, QString("Vessel"));
@@ -322,12 +345,6 @@ void Viewer::onOpenDSAFile() {
 	ui.frameSlider->setValue(1);
 	ui.frameVal->setText(QString::number(1));
 	viewer3d->dsa_frame = ui.frameSlider->value() - 1;
-	viewer3d->pickedCells.clear();
-	if (viewer3d->meshes.size() > currentLayerId) {
-		for (int i = 0; i < viewer3d->meshes[currentLayerId]->GetNumberOfCells(); ++i) {
-			viewer3d->pickedCells.push_back(false);
-		}
-	}
 	viewer3d->updateView();
 }
 
@@ -341,15 +358,4 @@ void Viewer::updateFrame(int val) {
 	ui.frameVal->setText(QString::number(val));
 	viewer3d->dsa_frame = ui.frameSlider->value() - 1;
 	viewer3d->updateView();
-}
-
-void Viewer::updateHighlight() {
-	if (viewer3d->mouse_style->isPicking) {
-		viewer3d->mouse_style->isPicking = false;
-		ui.highLightBtn->setText(QString::fromLocal8Bit("选择高亮"));
-	} else {
-		viewer3d->mouse_style->isPicking = true;
-		viewer3d->mouse_style->polydata = viewer3d->meshes[currentLayerId];
-		ui.highLightBtn->setText(QString::fromLocal8Bit("停止选择"));
-	}
 }

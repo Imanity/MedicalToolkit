@@ -9,7 +9,8 @@
 
 #include "Viewer2D.h"
 #include "Viewer3D.h"
-#include "ClickableLabel.h"
+
+#include "Widgets/ClickableLabel.h"
 
 struct LayerItem {
 	QCheckBox *checkBox;
@@ -34,6 +35,8 @@ public slots:
 	void onSaveNiftiFile();
 	// 打开血管增强对话框
 	void onExtractVessel();
+	// 打开体数据选取标签页
+	void onVolumePicking();
 	// 打开手动DSA配准标签页
 	void onManualRegisterDSA();
 
@@ -71,8 +74,6 @@ public slots:
 	void onGenerateCamera();
 	// 调整显示帧
 	void updateFrame(int);
-	// 设定选择高亮状态
-	void updateHighlight();
 
 	// ========================== 血管增强 =============================
 	// 血管增强
@@ -99,5 +100,7 @@ private:
 	QSignalMapper *closeSignalMapper;
 	std::vector<LayerItem> layerItems;
 	int currentLayerId = 0;
+	int pickedLayerId = 0;
 	QWidget *pageDSAManualRegister;
+	QWidget *pagePicking;
 };

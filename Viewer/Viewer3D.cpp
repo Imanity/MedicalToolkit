@@ -38,12 +38,6 @@ Viewer3D::Viewer3D(QWidget *parent) : QVTKWidget(parent) {
 	this->mouse_style = vtkSmartPointer<MouseInteractorStyle>::New();
 	this->mouse_style->SetDefaultRenderer(this->renderer);
 	this->GetInteractor()->SetInteractorStyle(this->mouse_style);
-
-	lut = vtkSmartPointer<vtkLookupTable>::New();
-	lut->SetNumberOfTableValues(2);
-	lut->Build();
-
-	connect(mouse_style, SIGNAL(pickCell(int)), this, SLOT(pickCell(int)));
 }
 
 Viewer3D::~Viewer3D() {
@@ -103,38 +97,13 @@ void Viewer3D::updateView() {
 			if (!visible[i])
 				continue;
 
-			vtkSmartPointer<vtkFloatArray> cellScalar = vtkSmartPointer<vtkFloatArray>::New();
-
-			if (pickedCells.size() == meshes[i]->GetNumberOfCells() && dsa_frame >= 0) {
-				for (int j = 0; j < pickedCells.size(); ++j) {
-					cellScalar->InsertNextValue(pickedCells[j]);
-				}
-				meshes[i]->GetCellData()->SetScalars(cellScalar);
-
-				lut->SetTableValue(0, (double)color[i].red() / 255.0, (double)color[i].green() / 255.0, 
-					(double)color[i].blue() / 255.0, (double)color[i].alpha() / 255.0);
-				lut->SetTableValue(1, (double)color[i].red() / 255.0, (double)color[i].green() / 255.0, (double)color[i].blue() / 255.0, 1.0);
-			}
-
 			vtkSmartPointer<vtkPolyDataMapper> meshMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
 			meshMapper->SetInputData(meshes[i]);
 			meshMapper->ScalarVisibilityOff();
 
-			if (pickedCells.size() == meshes[i]->GetNumberOfCells() && dsa_frame >= 0) {
-				meshMapper->ScalarVisibilityOn();
-				meshMapper->SetScalarRange(0, 1);
-				meshMapper->SetScalarModeToUseCellData();
-				meshMapper->SetLookupTable(lut);
-			}
-
 			vtkSmartPointer<vtkActor> meshActor = vtkSmartPointer<vtkActor>::New();
 			meshActor->SetMapper(meshMapper);
 			meshActor->GetProperty()->SetColor((double)color[i].red() / 255.0, (double)color[i].green() / 255.0, (double)color[i].blue() / 255.0);
-			if (pickedCells.size() == meshes[i]->GetNumberOfCells() && dsa_frame >= 0) {
-				meshActor->GetProperty()->SetOpacity(1.0);
-			} else {
-				meshActor->GetProperty()->SetOpacity((double)color[i].alpha() / 255.0);
-			}
 			meshActor->GetProperty()->SetAmbient(ambient);
 			meshActor->GetProperty()->SetDiffuse(diffuse);
 			meshActor->GetProperty()->SetSpecular(specular);
@@ -276,6 +245,10 @@ vtkSmartPointer<vtkPolyData> Viewer3D::isoSurface(VolumeData<short> &v, int isoV
 	connectivityFilter->SetInputConnection(stripper->GetOutputPort());
 	connectivityFilter->SetExtractionModeToLargestRegion();
 	connectivityFilter->Update();
+
+	if (connectivityFilter->GetOutput()->GetNumberOfCells() <= 0) {
+		return connectivityFilter->GetOutput();
+	}
 
 	vtkNew<vtkSmoothPolyDataFilter> smoothFilter;
 	smoothFilter->SetInputData(connectivityFilter->GetOutput());
@@ -465,30 +438,5 @@ void Viewer3D::setVisible(int v) {
 void Viewer3D::setIsoValue(int i, int v) {
 	isoValue[i] = v;
 	meshes[i] = isoSurface(volumes[i], v);
-	updateView();
-}
-
-void Viewer3D::pickCell(int id) {
-	if (id >= pickedCells.size())
-		return;
-
-	double maxDis = 10.0;
-
-	for (int i = 0; i < meshes.size(); ++i) {
-		if (meshes[i]->GetNumberOfCells() != pickedCells.size())
-			continue;
-
-		double p0[3];
-		meshes[i]->GetCell(id)->GetPoints()->GetPoint(0, p0);
-
-		for (int j = 0; j < pickedCells.size(); ++j) {
-			if (pickedCells[j])
-				continue;
-			double p[3];
-			meshes[i]->GetCell(j)->GetPoints()->GetPoint(0, p);
-			if (vtkMath::Distance2BetweenPoints(p, p0) < maxDis)
-				pickedCells[j] = true;
-		}
-	}
 	updateView();
 }

@@ -63,9 +63,6 @@ public slots:
 	void setVisible(int v);
 	void setIsoValue(int i, int v);
 
-	// 点选高亮点
-	void pickCell(int id);
-
 private:
 	Ui::Viewer3D ui;
 
@@ -74,8 +71,6 @@ private:
 	RENDERING_MODE renderingMode = MESH_RENDERING;
 	double ambient = 0.0, diffuse = 0.8, specular = 0.2;
 	bool isFirstRead = true;
-
-	vtkSmartPointer<vtkLookupTable> lut;
 
 public:
 	double lenX = 0, lenY = 0, lenZ = 0;
@@ -99,5 +94,4 @@ public:
 	// 二维DSA数据及显示参数
 	VolumeData<short> dsa;
 	int dsa_frame = -1;
-	std::vector<bool> pickedCells;
 };
