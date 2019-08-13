@@ -2,6 +2,10 @@
 
 #include "../VolumeData/VolumeData.h"
 
+#include "Dialogs/DialogVesselExtractor.h"
+
+#include "Functions/VesselExtractor.h"
+
 #include <QFileDialog>
 #include <QSizePolicy>
 
@@ -39,9 +43,14 @@ Viewer::Viewer(QWidget *parent)	: QMainWindow(parent) {
 	ui.layerTable->setColumnWidth(2, 100);
 	ui.layerTable->setColumnWidth(3, 25);
 
-	connect(ui.actionOpenDicom, SIGNAL(triggered()), this, SLOT(openDicomFile()));
-	connect(ui.actionOpenNifti, SIGNAL(triggered()), this, SLOT(openNiftiFile()));
-	connect(ui.actionSaveNifti, SIGNAL(triggered()), this, SLOT(saveNiftiFile()));
+	pageDSAManualRegister = ui.PageManualDSARegister;
+	ui.tabWidget1->removeTab(1);
+
+	connect(ui.actionOpenDicom, SIGNAL(triggered()), this, SLOT(onOpenDicomFile()));
+	connect(ui.actionOpenNifti, SIGNAL(triggered()), this, SLOT(onOpenNiftiFile()));
+	connect(ui.actionSaveNifti, SIGNAL(triggered()), this, SLOT(onSaveNiftiFile()));
+	connect(ui.actionExtractVessel, SIGNAL(triggered()), this, SLOT(onExtractVessel()));
+	connect(ui.actionManualRegisterDSA, SIGNAL(triggered()), this, SLOT(onManualRegisterDSA()));
 	connect(ui.ambientSlider, SIGNAL(valueChanged(int)), viewer3d, SLOT(setAmbient(int)));
 	connect(ui.diffuseSlider, SIGNAL(valueChanged(int)), viewer3d, SLOT(setDiffuse(int)));
 	connect(ui.SpecularSlider, SIGNAL(valueChanged(int)), viewer3d, SLOT(setSpecular(int)));
@@ -63,9 +72,13 @@ Viewer::Viewer(QWidget *parent)	: QMainWindow(parent) {
 	connect(ui.isoValueVal, SIGNAL(editingFinished()), this, SLOT(updateLayerIsoValue()));
 	connect(ui.AxesCheckBox, SIGNAL(stateChanged(int)), this, SLOT(updateAxesVisible(int)));
 	connect(ui.SliceCheckBox, SIGNAL(stateChanged(int)), this, SLOT(updateSliceVisible(int)));
+	connect(ui.openDSABtn, SIGNAL(clicked()), this, SLOT(onOpenDSAFile()));
+	connect(ui.generateCameraBtn, SIGNAL(clicked()), this, SLOT(onGenerateCamera()));
+	connect(ui.frameSlider, SIGNAL(valueChanged(int)), this, SLOT(updateFrame(int)));
+	connect(ui.highLightBtn, SIGNAL(clicked()), this, SLOT(updateHighlight()));
 }
 
-void Viewer::openDicomFile() {
+void Viewer::onOpenDicomFile() {
 	QString fileToOpen = QFileDialog::getExistingDirectory(this, "Open", "D:/Data/");
 	if (!fileToOpen.size())
 		return;
@@ -86,7 +99,7 @@ void Viewer::openDicomFile() {
 	updateLayers();
 }
 
-void Viewer::openNiftiFile() {
+void Viewer::onOpenNiftiFile() {
 	QString fileToOpen = QFileDialog::getOpenFileName(this, "Open", "D:/Data/", "Nifti(*.nii)");
 	if (!fileToOpen.size())
 		return;
@@ -107,7 +120,7 @@ void Viewer::openNiftiFile() {
 	updateLayers();
 }
 
-void Viewer::saveNiftiFile() {
+void Viewer::onSaveNiftiFile() {
 	QString fileToSave = QFileDialog::getSaveFileName(this, "Save", "D:/Data/", "Nifti(*.nii)");
 	if (!fileToSave.size())
 		return;
@@ -115,6 +128,16 @@ void Viewer::saveNiftiFile() {
 	if (currentLayerId >= viewer3d->volumes.size())
 		return;
 	viewer3d->volumes[currentLayerId].writeToNII(fileToSave.toStdString());
+}
+
+void Viewer::onExtractVessel() {
+	DialogVesselExtractor *dialog = new DialogVesselExtractor(this, viewer3d->title);
+	dialog->show();
+}
+
+void Viewer::onManualRegisterDSA() {
+	ui.tabWidget1->addTab(pageDSAManualRegister, QString::fromLocal8Bit("手动DSA配准"));
+	ui.tabWidget1->setCurrentIndex(1);
 }
 
 void Viewer::updateLayers() {
@@ -127,7 +150,7 @@ void Viewer::updateLayers() {
 	for (int i = 0; i < n; ++i) {
 		LayerItem newItem;
 		newItem.checkBox = new QCheckBox(this);
-		newItem.checkBox->setChecked(true);
+		newItem.checkBox->setChecked(viewer3d->visible[i]);
 		newItem.checkBox->setStyleSheet("margin-left: 5px");
 		connect(newItem.checkBox, SIGNAL(clicked()), visibleSignalMapper, SLOT(map()));
 		visibleSignalMapper->setMapping(newItem.checkBox, i);
@@ -174,7 +197,6 @@ void Viewer::deleteLayer(int id) {
 }
 
 void Viewer::updateLayerDetail() {
-	// Tab 1
 	ui.layerName->setText(viewer3d->title[currentLayerId]);
 	ui.colorR->setValue(viewer3d->color[currentLayerId].red());
 	ui.colorG->setValue(viewer3d->color[currentLayerId].green());
@@ -186,9 +208,6 @@ void Viewer::updateLayerDetail() {
 	ui.windowWidthVal->setText(QString::number(viewer3d->WindowWidth[currentLayerId]));
 	ui.isoValue->setValue(viewer3d->isoValue[currentLayerId]);
 	ui.isoValueVal->setText(QString::number(viewer3d->isoValue[currentLayerId]));
-
-	// Tab 2
-	ui.layerName1->setText(viewer3d->title[currentLayerId]);
 }
 
 void Viewer::updateAllViewers() {
@@ -280,4 +299,57 @@ void Viewer::updateAxesVisible(int state) {
 void Viewer::updateSliceVisible(int state) {
 	viewer3d->sliceFlag = state > 0;
 	viewer3d->updateView();
+}
+
+void Viewer::extractVessel(int nonContrastId, int enhanceId) {
+	VesselExtractor extractor;
+	VolumeData<short> v = extractor.getOutput(viewer3d->volumes[nonContrastId], viewer3d->volumes[enhanceId]);
+
+	viewer3d->addVolume(v, QString("Vessel"));
+
+	updateAllViewers();
+	updateLayers();
+}
+
+void Viewer::onOpenDSAFile() {
+	QString fileToOpen = QFileDialog::getOpenFileName(this, "Open", "D:/Data/", "Dicom(*.*)");
+	if (!fileToOpen.size())
+		return;
+
+	viewer3d->dsa.readFromDSADicom(fileToOpen.toStdString());
+	ui.frameSlider->setMinimum(1);
+	ui.frameSlider->setMaximum(viewer3d->dsa.nz);
+	ui.frameSlider->setValue(1);
+	ui.frameVal->setText(QString::number(1));
+	viewer3d->dsa_frame = ui.frameSlider->value() - 1;
+	viewer3d->pickedCells.clear();
+	if (viewer3d->meshes.size() > currentLayerId) {
+		for (int i = 0; i < viewer3d->meshes[currentLayerId]->GetNumberOfCells(); ++i) {
+			viewer3d->pickedCells.push_back(false);
+		}
+	}
+	viewer3d->updateView();
+}
+
+void Viewer::onGenerateCamera() {
+	viewer3d->dsa_frame = -1;
+	ui.tabWidget1->removeTab(1);
+	viewer3d->updateView();
+}
+
+void Viewer::updateFrame(int val) {
+	ui.frameVal->setText(QString::number(val));
+	viewer3d->dsa_frame = ui.frameSlider->value() - 1;
+	viewer3d->updateView();
+}
+
+void Viewer::updateHighlight() {
+	if (viewer3d->mouse_style->isPicking) {
+		viewer3d->mouse_style->isPicking = false;
+		ui.highLightBtn->setText(QString::fromLocal8Bit("选择高亮"));
+	} else {
+		viewer3d->mouse_style->isPicking = true;
+		viewer3d->mouse_style->polydata = viewer3d->meshes[currentLayerId];
+		ui.highLightBtn->setText(QString::fromLocal8Bit("停止选择"));
+	}
 }

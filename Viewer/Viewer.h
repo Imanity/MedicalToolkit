@@ -25,20 +25,31 @@ public:
 	Viewer(QWidget *parent = Q_NULLPTR);
 
 public slots:
+	// ========================== 菜单栏 =============================
 	// 打开Dicom文件
-	void openDicomFile();
+	void onOpenDicomFile();
 	// 打开Nifti文件
-	void openNiftiFile();
+	void onOpenNiftiFile();
 	// 导出Nifti文件
-	void saveNiftiFile();
+	void onSaveNiftiFile();
+	// 打开血管增强对话框
+	void onExtractVessel();
+	// 打开手动DSA配准标签页
+	void onManualRegisterDSA();
+
+	// ========================== 显示图层 =============================
 	// 选中图层
 	void setCurrentLayer(int id);
 	// 删除图层
 	void deleteLayer(int id);
 
-	// 刷新所有控件
-	void updateAllViewers();
-
+	// ========================== 绘制属性 =============================
+	// 更新是否显示坐标轴
+	void updateAxesVisible(int);
+	// 更新是否显示3D切片
+	void updateSliceVisible(int);
+	
+	// ========================== 显示标签页 =============================
 	// 更新选定图层名
 	void updateLayerName(QString str);
 	// 更新选定图层颜色
@@ -53,10 +64,23 @@ public slots:
 	void updateLayerIsoValueVal();
 	void updateLayerIsoValue();
 
-	// 更新是否显示坐标轴
-	void updateAxesVisible(int);
-	// 更新是否显示3D切片
-	void updateSliceVisible(int);
+	// ========================== 手动配准标签页 =============================
+	// 打开DSA文件
+	void onOpenDSAFile();
+	// 生成手动配准结果
+	void onGenerateCamera();
+	// 调整显示帧
+	void updateFrame(int);
+	// 设定选择高亮状态
+	void updateHighlight();
+
+	// ========================== 血管增强 =============================
+	// 血管增强
+	void extractVessel(int nonContrastId, int enhanceId);
+
+	// ========================== 其他 =============================
+	// 刷新所有控件
+	void updateAllViewers();
 
 private:
 	// 更新所有图层信息
@@ -75,4 +99,5 @@ private:
 	QSignalMapper *closeSignalMapper;
 	std::vector<LayerItem> layerItems;
 	int currentLayerId = 0;
+	QWidget *pageDSAManualRegister;
 };

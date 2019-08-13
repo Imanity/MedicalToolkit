@@ -20,7 +20,11 @@
 #include <vtkTextActor.h>
 #include <vtkImageActor.h>
 #include <vtkImageMapper3D.h>
+#include <vtkImageMapper.h>
 #include <vtkTransform.h>
+#include <vtkLookupTable.h>
+#include <vtkFloatArray.h>
+#include <vtkCellData.h>
 
 Viewer3D::Viewer3D(QWidget *parent) : QVTKWidget(parent) {
 	ui.setupUi(this);
@@ -30,6 +34,16 @@ Viewer3D::Viewer3D(QWidget *parent) : QVTKWidget(parent) {
 	this->renderer->SetUseDepthPeeling(true);
 	this->GetRenderWindow()->AddRenderer(this->renderer);
 	this->GetRenderWindow()->Render();
+
+	this->mouse_style = vtkSmartPointer<MouseInteractorStyle>::New();
+	this->mouse_style->SetDefaultRenderer(this->renderer);
+	this->GetInteractor()->SetInteractorStyle(this->mouse_style);
+
+	lut = vtkSmartPointer<vtkLookupTable>::New();
+	lut->SetNumberOfTableValues(2);
+	lut->Build();
+
+	connect(mouse_style, SIGNAL(pickCell(int)), this, SLOT(pickCell(int)));
 }
 
 Viewer3D::~Viewer3D() {
@@ -82,7 +96,6 @@ void Viewer3D::updateView() {
 			vtkSmartPointer<vtkVolume> volumeVTK = vtkSmartPointer<vtkVolume>::New();
 			volumeVTK->SetMapper(volumeMapper);
 			volumeVTK->SetProperty(volumeProperty);
-			volumeVTK->SetUserMatrix(transforms[i]);
 			this->renderer->AddViewProp(volumeVTK);
 		}
 	} else if (renderingMode == MESH_RENDERING) {
@@ -90,18 +103,41 @@ void Viewer3D::updateView() {
 			if (!visible[i])
 				continue;
 
+			vtkSmartPointer<vtkFloatArray> cellScalar = vtkSmartPointer<vtkFloatArray>::New();
+
+			if (pickedCells.size() == meshes[i]->GetNumberOfCells() && dsa_frame >= 0) {
+				for (int j = 0; j < pickedCells.size(); ++j) {
+					cellScalar->InsertNextValue(pickedCells[j]);
+				}
+				meshes[i]->GetCellData()->SetScalars(cellScalar);
+
+				lut->SetTableValue(0, (double)color[i].red() / 255.0, (double)color[i].green() / 255.0, 
+					(double)color[i].blue() / 255.0, (double)color[i].alpha() / 255.0);
+				lut->SetTableValue(1, (double)color[i].red() / 255.0, (double)color[i].green() / 255.0, (double)color[i].blue() / 255.0, 1.0);
+			}
+
 			vtkSmartPointer<vtkPolyDataMapper> meshMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
 			meshMapper->SetInputData(meshes[i]);
 			meshMapper->ScalarVisibilityOff();
 
+			if (pickedCells.size() == meshes[i]->GetNumberOfCells() && dsa_frame >= 0) {
+				meshMapper->ScalarVisibilityOn();
+				meshMapper->SetScalarRange(0, 1);
+				meshMapper->SetScalarModeToUseCellData();
+				meshMapper->SetLookupTable(lut);
+			}
+
 			vtkSmartPointer<vtkActor> meshActor = vtkSmartPointer<vtkActor>::New();
 			meshActor->SetMapper(meshMapper);
 			meshActor->GetProperty()->SetColor((double)color[i].red() / 255.0, (double)color[i].green() / 255.0, (double)color[i].blue() / 255.0);
-			meshActor->GetProperty()->SetOpacity((double)color[i].alpha() / 255.0);
+			if (pickedCells.size() == meshes[i]->GetNumberOfCells() && dsa_frame >= 0) {
+				meshActor->GetProperty()->SetOpacity(1.0);
+			} else {
+				meshActor->GetProperty()->SetOpacity((double)color[i].alpha() / 255.0);
+			}
 			meshActor->GetProperty()->SetAmbient(ambient);
 			meshActor->GetProperty()->SetDiffuse(diffuse);
 			meshActor->GetProperty()->SetSpecular(specular);
-			meshActor->SetUserMatrix(transforms[i]);
 
 			this->renderer->AddActor(meshActor);
 		}
@@ -155,6 +191,33 @@ void Viewer3D::updateView() {
 		this->renderer->AddActor(actor_transverse);
 	}
 
+	if (dsa_frame >= 0) {
+		vtkSmartPointer<vtkImageData> dsaImage = vtkSmartPointer<vtkImageData>::New();
+		dsaImage->SetDimensions(dsa.nx, dsa.ny, 1);
+		dsaImage->AllocateScalars(VTK_UNSIGNED_CHAR, 3);
+		int basePtr = dsa_frame * dsa.nx * dsa.ny;
+		for (unsigned int x = 0; x < dsa.nx; x++) {
+			for (unsigned int y = 0; y < dsa.ny; y++) {
+				unsigned char* pixel = static_cast<unsigned char*>(dsaImage->GetScalarPointer(x, y, 0));
+				pixel[0] = pixel[1] = pixel[2] = dsa.data[basePtr + (dsa.ny - y - 1) * dsa.nx + x];
+			}
+		}
+		dsaImage->Modified();
+
+		vtkSmartPointer<vtkImageMapper> imageMapper = vtkSmartPointer<vtkImageMapper>::New();
+		imageMapper->SetInputData(dsaImage);
+		imageMapper->SetColorWindow(255);
+		imageMapper->SetColorLevel(127.5);
+
+		vtkSmartPointer<vtkActor2D> actor_dsa = vtkSmartPointer<vtkActor2D>::New();
+		actor_dsa->SetMapper(imageMapper);
+		actor_dsa->SetPosition(0, 0);
+		actor_dsa->GetProperty()->SetOpacity(0.1);
+		actor_dsa->GetProperty()->SetDisplayLocationToBackground();
+
+		this->renderer->AddActor2D(actor_dsa);
+	}
+
 	if (isFirstRead && volumes.size()) {
 		this->renderer->ResetCamera();
 		isFirstRead = false;
@@ -172,9 +235,6 @@ void Viewer3D::addVolume(VolumeData<short> v, QString title) {
 	WindowWidth.push_back(800);
 	color.push_back(QColor(255, 255, 255, 255));
 	visible.push_back(true);
-	vtkSmartPointer<vtkMatrix4x4> I = vtkSmartPointer<vtkMatrix4x4>::New();
-	I->Identity();
-	transforms.push_back(I);
 
 	lenX = (v.dx * v.nx) > lenX ? (v.dx * v.nx) : lenX;
 	lenY = (v.dy * v.ny) > lenY ? (v.dy * v.ny) : lenY;
@@ -192,7 +252,6 @@ void Viewer3D::deleteVolume(int idx) {
 	WindowCenter.erase(WindowCenter.begin() + idx);
 	color.erase(color.begin() + idx);
 	title.erase(title.begin() + idx);
-	transforms.erase(transforms.begin() + idx);
 }
 
 vtkSmartPointer<vtkPolyData> Viewer3D::isoSurface(VolumeData<short> &v, int isoValue) {
@@ -406,5 +465,30 @@ void Viewer3D::setVisible(int v) {
 void Viewer3D::setIsoValue(int i, int v) {
 	isoValue[i] = v;
 	meshes[i] = isoSurface(volumes[i], v);
+	updateView();
+}
+
+void Viewer3D::pickCell(int id) {
+	if (id >= pickedCells.size())
+		return;
+
+	double maxDis = 10.0;
+
+	for (int i = 0; i < meshes.size(); ++i) {
+		if (meshes[i]->GetNumberOfCells() != pickedCells.size())
+			continue;
+
+		double p0[3];
+		meshes[i]->GetCell(id)->GetPoints()->GetPoint(0, p0);
+
+		for (int j = 0; j < pickedCells.size(); ++j) {
+			if (pickedCells[j])
+				continue;
+			double p[3];
+			meshes[i]->GetCell(j)->GetPoints()->GetPoint(0, p);
+			if (vtkMath::Distance2BetweenPoints(p, p0) < maxDis)
+				pickedCells[j] = true;
+		}
+	}
 	updateView();
 }

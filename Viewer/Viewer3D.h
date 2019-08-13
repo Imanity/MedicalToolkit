@@ -12,6 +12,8 @@
 #include <QVTKWidget.h>
 #include "ui_Viewer3D.h"
 
+#include "MouseInteractorSytle.h"
+
 #include "../VolumeData/VolumeData.h"
 
 VTK_MODULE_INIT(vtkRenderingOpenGL2);
@@ -61,6 +63,9 @@ public slots:
 	void setVisible(int v);
 	void setIsoValue(int i, int v);
 
+	// 点选高亮点
+	void pickCell(int id);
+
 private:
 	Ui::Viewer3D ui;
 
@@ -70,13 +75,18 @@ private:
 	double ambient = 0.0, diffuse = 0.8, specular = 0.2;
 	bool isFirstRead = true;
 
+	vtkSmartPointer<vtkLookupTable> lut;
+
 public:
 	double lenX = 0, lenY = 0, lenZ = 0;
 	bool axesFlag = true;
-	bool sliceFlag = true;
+	bool sliceFlag = false;
 	double slicePos[3];
 
+	vtkSmartPointer<MouseInteractorStyle> mouse_style;
+
 public:
+	// 三维体数据及显示参数
 	std::vector<VolumeData<short>> volumes;
 	std::vector<vtkSmartPointer<vtkPolyData>> meshes;
 	std::vector<bool> visible;
@@ -85,5 +95,9 @@ public:
 	std::vector<int> WindowCenter;
 	std::vector<QColor> color;
 	std::vector<QString> title;
-	std::vector<vtkSmartPointer<vtkMatrix4x4>> transforms;
+
+	// 二维DSA数据及显示参数
+	VolumeData<short> dsa;
+	int dsa_frame = -1;
+	std::vector<bool> pickedCells;
 };

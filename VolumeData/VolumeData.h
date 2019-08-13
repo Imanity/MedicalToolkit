@@ -30,6 +30,9 @@ public:
 	// Read data from Dicom file
 	void readFromDicom(std::string file_path);
 
+	// Read data from DSA Dicom file
+	void readFromDSADicom(std::string file_path);
+
 	// Read data from NII file
 	void readFromNII(std::string file_path);
 
@@ -83,6 +86,21 @@ VolumeData<T>::~VolumeData() {
 template <class T>
 void VolumeData<T>::readFromDicom(std::string file_path) {
 	DcmData dcmData(file_path);
+	nx = dcmData.img_width;
+	ny = dcmData.img_height;
+	nz = dcmData.slice_num;
+	dx = dcmData.img_pixel_spacing[0];
+	dy = dcmData.img_pixel_spacing[1];
+	dz = dcmData.img_slice_thickness;
+	nvox = nx * ny * nz;
+	data = new T[nvox];
+	for (int i = 0; i < nvox; ++i)
+		data[i] = dcmData.volume_buf[i];
+}
+
+template <class T>
+void VolumeData<T>::readFromDSADicom(std::string file_path) {
+	DcmData dcmData(file_path, true);
 	nx = dcmData.img_width;
 	ny = dcmData.img_height;
 	nz = dcmData.slice_num;

@@ -35,9 +35,15 @@
       <item>
        <widget class="QTabWidget" name="tabWidget1">
         <property name="currentIndex">
-         <number>1</number>
+         <number>0</number>
         </property>
-        <widget class="QWidget" name="Page1">
+        <property name="tabsClosable">
+         <bool>false</bool>
+        </property>
+        <property name="movable">
+         <bool>false</bool>
+        </property>
+        <widget class="QWidget" name="PageDisplay">
          <attribute name="title">
           <string>显示</string>
          </attribute>
@@ -279,11 +285,14 @@
           </item>
          </layout>
         </widget>
-        <widget class="QWidget" name="Page2">
+        <widget class="QWidget" name="PageManualDSARegister">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
          <attribute name="title">
-          <string>变形</string>
+          <string>手动DSA配准</string>
          </attribute>
-         <layout class="QGridLayout" name="transformLayout" columnstretch="1,3">
+         <layout class="QGridLayout" name="transformLayout" columnstretch="1,1">
           <property name="leftMargin">
            <number>5</number>
           </property>
@@ -296,17 +305,25 @@
           <property name="bottomMargin">
            <number>5</number>
           </property>
-          <item row="0" column="0">
-           <widget class="QLabel" name="layerNameLabel1">
-            <property name="text">
-             <string>图层：</string>
-            </property>
-           </widget>
+          <item row="2" column="0">
+           <layout class="QHBoxLayout" name="horizontalLayout_2">
+            <item>
+             <widget class="QLabel" name="frameLabel">
+              <property name="text">
+               <string>DSA帧数：</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="frameVal">
+              <property name="text">
+               <string>1</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </item>
-          <item row="0" column="1">
-           <widget class="QLineEdit" name="layerName1"/>
-          </item>
-          <item row="1" column="0">
+          <item row="4" column="0">
            <spacer name="verticalSpacer_2">
             <property name="orientation">
              <enum>Qt::Vertical</enum>
@@ -318,6 +335,40 @@
              </size>
             </property>
            </spacer>
+          </item>
+          <item row="0" column="1">
+           <widget class="QPushButton" name="generateCameraBtn">
+            <property name="text">
+             <string>生成摄像机参数</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QPushButton" name="openDSABtn">
+            <property name="text">
+             <string>打开DSA文件</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QSlider" name="frameSlider">
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>1</number>
+            </property>
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QPushButton" name="highLightBtn">
+            <property name="text">
+             <string>选择高亮</string>
+            </property>
+           </widget>
           </item>
          </layout>
         </widget>
@@ -472,7 +523,7 @@
                  <string>显示3D切片</string>
                 </property>
                 <property name="checked">
-                 <bool>true</bool>
+                 <bool>false</bool>
                 </property>
                </widget>
               </item>
@@ -536,7 +587,21 @@
     <addaction name="actionOpenNifti"/>
     <addaction name="actionSaveNifti"/>
    </widget>
+   <widget class="QMenu" name="menuOperation">
+    <property name="title">
+     <string>操作</string>
+    </property>
+    <addaction name="actionExtractVessel"/>
+   </widget>
+   <widget class="QMenu" name="menuRegister">
+    <property name="title">
+     <string>配准</string>
+    </property>
+    <addaction name="actionManualRegisterDSA"/>
+   </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuOperation"/>
+   <addaction name="menuRegister"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <widget class="QToolBar" name="toolBar">
@@ -563,6 +628,16 @@
   <action name="actionSaveNifti">
    <property name="text">
     <string>导出Nifti</string>
+   </property>
+  </action>
+  <action name="actionExtractVessel">
+   <property name="text">
+    <string>提取剪影血管</string>
+   </property>
+  </action>
+  <action name="actionManualRegisterDSA">
+   <property name="text">
+    <string>手动DSA配准</string>
    </property>
   </action>
  </widget>
