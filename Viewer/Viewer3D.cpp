@@ -104,6 +104,7 @@ void Viewer3D::updateView() {
 			vtkSmartPointer<vtkActor> meshActor = vtkSmartPointer<vtkActor>::New();
 			meshActor->SetMapper(meshMapper);
 			meshActor->GetProperty()->SetColor((double)color[i].red() / 255.0, (double)color[i].green() / 255.0, (double)color[i].blue() / 255.0);
+			meshActor->GetProperty()->SetOpacity((double)color[i].alpha() / 255.0);
 			meshActor->GetProperty()->SetAmbient(ambient);
 			meshActor->GetProperty()->SetDiffuse(diffuse);
 			meshActor->GetProperty()->SetSpecular(specular);
@@ -223,7 +224,7 @@ void Viewer3D::deleteVolume(int idx) {
 	title.erase(title.begin() + idx);
 }
 
-vtkSmartPointer<vtkPolyData> Viewer3D::isoSurface(VolumeData<short> &v, int isoValue) {
+vtkSmartPointer<vtkPolyData> Viewer3D::isoSurface(VolumeData<short> &v, int isoValue, bool skipConnectivityFilter) {
 	vtkSmartPointer<vtkImageImport> image_import = vtkSmartPointer<vtkImageImport>::New();
 	image_import->SetDataSpacing(v.dx, v.dy, v.dz);
 	image_import->SetDataOrigin(0, 0, 0);
@@ -237,9 +238,15 @@ vtkSmartPointer<vtkPolyData> Viewer3D::isoSurface(VolumeData<short> &v, int isoV
 	vtkSmartPointer<vtkMarchingCubes> marchingCubes = vtkSmartPointer<vtkMarchingCubes>::New();
 	marchingCubes->SetInputConnection(image_import->GetOutputPort());
 	marchingCubes->SetValue(0, isoValue);
+	marchingCubes->Update();
 
 	vtkSmartPointer<vtkStripper> stripper = vtkSmartPointer<vtkStripper>::New();
 	stripper->SetInputConnection(marchingCubes->GetOutputPort());
+	stripper->Update();
+
+	if (skipConnectivityFilter) {
+		return stripper->GetOutput();
+	}
 
 	vtkSmartPointer<vtkPolyDataConnectivityFilter> connectivityFilter = vtkSmartPointer<vtkPolyDataConnectivityFilter>::New();
 	connectivityFilter->SetInputConnection(stripper->GetOutputPort());

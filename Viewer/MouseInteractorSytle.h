@@ -12,16 +12,20 @@ public:
 	static MouseInteractorStyle * New();
 	vtkTypeMacro(MouseInteractorStyle, vtkInteractorStyleTrackballCamera);
 
-	virtual void OnLeftButtonDown();
-	virtual void OnLeftButtonUp();
+	virtual void OnRightButtonDown();
+	virtual void OnRightButtonUp();
+	virtual void OnMouseMove();
 
 protected:
 	MouseInteractorStyle();
 
 signals:
 	void pickCell(int);
+	void startPick();
+	void stopPick();
 
 public:
 	bool isPicking = false;
+	bool isDragging = false;
 	vtkSmartPointer<vtkPolyData> polydata;
 };

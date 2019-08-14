@@ -8,6 +8,9 @@
 #include <QFileDialog>
 #include <QSizePolicy>
 
+#include <vtkCellData.h>
+#include <vtkMath.h>
+
 Viewer::Viewer(QWidget *parent)	: QMainWindow(parent) {
 	ui.setupUi(this);
 
@@ -74,6 +77,10 @@ Viewer::Viewer(QWidget *parent)	: QMainWindow(parent) {
 	connect(ui.isoValueVal, SIGNAL(editingFinished()), this, SLOT(updateLayerIsoValue()));
 	connect(ui.AxesCheckBox, SIGNAL(stateChanged(int)), this, SLOT(updateAxesVisible(int)));
 	connect(ui.SliceCheckBox, SIGNAL(stateChanged(int)), this, SLOT(updateSliceVisible(int)));
+	connect(ui.pickingBtn, SIGNAL(clicked()), this, SLOT(onPickingVolume()));
+	connect(viewer3d->mouse_style, SIGNAL(pickCell(int)), this, SLOT(onPickedCell(int)));
+	connect(viewer3d->mouse_style, SIGNAL(startPick()), this, SLOT(onStartPickingCell()));
+	connect(viewer3d->mouse_style, SIGNAL(stopPick()), this, SLOT(onStopPickingCell()));
 	connect(ui.openDSABtn, SIGNAL(clicked()), this, SLOT(onOpenDSAFile()));
 	connect(ui.generateCameraBtn, SIGNAL(clicked()), this, SLOT(onGenerateCamera()));
 	connect(ui.frameSlider, SIGNAL(valueChanged(int)), this, SLOT(updateFrame(int)));
@@ -332,6 +339,60 @@ void Viewer::extractVessel(int nonContrastId, int enhanceId) {
 
 	updateAllViewers();
 	updateLayers();
+}
+
+void Viewer::onPickingVolume() {
+	if (viewer3d->mouse_style->isPicking) {
+		viewer3d->mouse_style->isPicking = false;
+		ui.pickingBtn->setText(QString::fromLocal8Bit("开始选择"));
+	} else {
+		viewer3d->mouse_style->isPicking = true;
+		ui.pickingBtn->setText(QString::fromLocal8Bit("停止选择"));
+	}
+}
+
+void Viewer::onPickedCell(int id) {
+	pickedCells.push_back(id);
+}
+
+void Viewer::onStartPickingCell() {
+	pickedCells.clear();
+}
+
+void Viewer::onStopPickingCell() {
+	if (viewer3d->volumes[pickedLayerId].nvox != viewer3d->volumes[currentLayerId].nvox) {
+		return;
+	}
+
+	for (int i = 0; i < viewer3d->volumes[pickedLayerId].nvox; ++i) {
+		if (viewer3d->volumes[currentLayerId].data[i] <= 0 || viewer3d->volumes[pickedLayerId].data[i] > 0) {
+			continue;
+		}
+		double p[3];
+		for (int j = 0; j < 3; ++j)
+			p[j] = viewer3d->volumes[currentLayerId].coord(i)(j);
+		p[0] *= viewer3d->volumes[currentLayerId].dx;
+		p[1] *= viewer3d->volumes[currentLayerId].dy;
+		p[2] *= viewer3d->volumes[currentLayerId].dz;
+
+		bool isPicked = false;
+
+		for (int j = 0; j < pickedCells.size(); ++j) {
+			double pos[3];
+			viewer3d->meshes[currentLayerId]->GetCell(pickedCells[j])->GetPoints()->GetPoint(0, pos);
+			if (vtkMath::Distance2BetweenPoints(p, pos) < maxPickingDistance) {
+				isPicked = true;
+				break;
+			}
+		}
+		
+		if (isPicked) {
+			viewer3d->volumes[pickedLayerId].data[i] = viewer3d->volumes[currentLayerId].data[i];
+		}
+	}
+
+	viewer3d->meshes[pickedLayerId] = viewer3d->isoSurface(viewer3d->volumes[pickedLayerId], 200, true);
+	viewer3d->updateView();
 }
 
 void Viewer::onOpenDSAFile() {

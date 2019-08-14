@@ -52,7 +52,7 @@ public:
 	vtkSmartPointer<vtkImageData> generateSlice2d(int plane, double pos);
 
 	// 等值面提取
-	vtkSmartPointer<vtkPolyData> isoSurface(VolumeData<short> &v, int isoValue);
+	vtkSmartPointer<vtkPolyData> isoSurface(VolumeData<short> &v, int isoValue, bool skipConnectivityFilter = false);
 
 public slots:
 	// 设定渲染参数
