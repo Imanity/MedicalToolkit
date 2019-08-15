@@ -70,12 +70,16 @@ public slots:
 	// ========================== 体数据拾取标签页 =============================
 	// 开启/关闭体数据拾取
 	void onPickingVolume();
+	// 开启/关闭体数据取消拾取
+	void onUnpickingVolume();
 	// 拾取cell
 	void onPickedCell(int id);
 	// 开始拾取
 	void onStartPickingCell();
 	// 停止拾取
 	void onStopPickingCell();
+	// 全部拾取
+	void onPickAll();
 
 	// ========================== 手动配准标签页 =============================
 	// 打开DSA文件
@@ -113,6 +117,8 @@ private:
 	int pickedLayerId = 0;
 	QWidget *pageDSAManualRegister;
 	QWidget *pagePicking;
-	double maxPickingDistance = 20.0;
+	bool pickStatus = 0;
+	double maxPickingDistance = 24.0;
+	double maxUnPickingDistance = 16.0;
 	std::vector<int> pickedCells;
 };

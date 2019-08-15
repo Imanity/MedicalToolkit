@@ -34,7 +34,9 @@ void MouseInteractorStyle::OnMouseMove() {
 		picker->SetTolerance(0.01);
 		picker->Pick(this->GetInteractor()->GetEventPosition()[0], this->GetInteractor()->GetEventPosition()[1], 0, this->GetDefaultRenderer());
 		int cell_id = picker->GetCellId();
-		emit pickCell(cell_id);
+		if (cell_id >= 0) {
+			emit pickCell(cell_id);
+		}
 
 		return;
 	}
