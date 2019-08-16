@@ -45,6 +45,8 @@ public:
 	void addVolume(VolumeData<short> v, QString title);
 	// 删除体数据
 	void deleteVolume(int idx);
+	// 添加新DSA图像
+	void addDSAImage(VolumeData<short> v, QString title);
 
 	// 生成二维切片视图
 	cv::Mat generateSlice2d(int plane, double pos, int scale);
@@ -92,6 +94,8 @@ public:
 	std::vector<QString> title;
 
 	// 二维DSA数据及显示参数
-	VolumeData<short> dsa;
-	int dsa_frame = -1;
+	std::vector<VolumeData<short>> dsaImages;
+	std::vector<int> dsaFrames;
+	std::vector<bool> dsaVisible;
+	std::vector<QString> dsaTitles;
 };

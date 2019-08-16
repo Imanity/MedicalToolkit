@@ -35,6 +35,9 @@ Viewer::Viewer(QWidget *parent)	: QMainWindow(parent) {
 	colorSignalMapper = new QSignalMapper(this);
 	closeSignalMapper = new QSignalMapper(this);
 
+	selectSignalMapper2d = new QSignalMapper(this);
+	closeSignalMapper2d = new QSignalMapper(this);
+
 	ui.windowCenterVal->setValidator(new QIntValidator(1, 2000, this));
 	ui.windowWidthVal->setValidator(new QIntValidator(1, 4000, this));
 	ui.isoValueVal->setValidator(new QIntValidator(1, 1000, this));
@@ -53,6 +56,7 @@ Viewer::Viewer(QWidget *parent)	: QMainWindow(parent) {
 	connect(ui.actionOpenDicom, SIGNAL(triggered()), this, SLOT(onOpenDicomFile()));
 	connect(ui.actionOpenNifti, SIGNAL(triggered()), this, SLOT(onOpenNiftiFile()));
 	connect(ui.actionSaveNifti, SIGNAL(triggered()), this, SLOT(onSaveNiftiFile()));
+	connect(ui.actionOpenDSA, SIGNAL(triggered()), this, SLOT(onOpenDSAFile()));
 	connect(ui.actionExtractVessel, SIGNAL(triggered()), this, SLOT(onExtractVessel()));
 	connect(ui.actionVolumePick, SIGNAL(triggered()), this, SLOT(onVolumePicking()));
 	connect(ui.actionManualRegisterDSA, SIGNAL(triggered()), this, SLOT(onManualRegisterDSA()));
@@ -83,9 +87,7 @@ Viewer::Viewer(QWidget *parent)	: QMainWindow(parent) {
 	connect(viewer3d->mouse_style, SIGNAL(pickCell(int)), this, SLOT(onPickedCell(int)));
 	connect(viewer3d->mouse_style, SIGNAL(startPick()), this, SLOT(onStartPickingCell()));
 	connect(viewer3d->mouse_style, SIGNAL(stopPick()), this, SLOT(onStopPickingCell()));
-	connect(ui.openDSABtn, SIGNAL(clicked()), this, SLOT(onOpenDSAFile()));
 	connect(ui.generateCameraBtn, SIGNAL(clicked()), this, SLOT(onGenerateCamera()));
-	connect(ui.frameSlider, SIGNAL(valueChanged(int)), this, SLOT(updateFrame(int)));
 }
 
 void Viewer::onOpenDicomFile() {
@@ -138,6 +140,22 @@ void Viewer::onSaveNiftiFile() {
 	if (currentLayerId >= viewer3d->volumes.size())
 		return;
 	viewer3d->volumes[currentLayerId].writeToNII(fileToSave.toStdString());
+}
+
+void Viewer::onOpenDSAFile() {
+	QString fileToOpen = QFileDialog::getOpenFileName(this, "Open", "D:/Data/", "Dicom(*.*)");
+	if (!fileToOpen.size())
+		return;
+
+	int n = viewer3d->dsaImages.size();
+
+	VolumeData<short> v;
+	v.readFromDSADicom(fileToOpen.toStdString());
+	
+	viewer3d->addDSAImage(v, QString("Image ") + QString::number(n + 1));
+	viewer3d->updateView();
+
+	updateLayers2d();
 }
 
 void Viewer::onExtractVessel() {
@@ -211,6 +229,37 @@ void Viewer::updateLayers() {
 		closeSignalMapper->setMapping(newItem.closeBtn, i);
 
 		layerItems.push_back(newItem);
+	}
+}
+
+void Viewer::updateLayers2d() {
+	int n = viewer3d->dsaImages.size();
+	ui.layer2dTable->setRowCount(n);
+
+	layer2dItems.clear();
+	ui.layer2dTable->clear();
+
+	for (int i = 0; i < n; ++i) {
+		Layer2DItem newItem;
+
+		newItem.label = new ClickableLabel(this);
+		newItem.label->setStyleSheet(QString("padding-left: 20px; ") + (currentLayer2dId == i ? "background-color: rgb(200, 200, 255);" : ""));
+		newItem.label->setText(viewer3d->dsaTitles[i]);
+		newItem.label->setCursor(Qt::PointingHandCursor);
+		ui.layer2dTable->setCellWidget(i, 0, newItem.label);
+		connect(newItem.label, SIGNAL(clicked()), selectSignalMapper2d, SLOT(map()));
+		selectSignalMapper2d->setMapping(newItem.label, i);
+
+		newItem.closeBtn = new ClickableLabel(this);
+		newItem.closeBtn->setAutoFillBackground(true);
+		newItem.closeBtn->setStyleSheet((currentLayer2dId == i) ? "background-color: rgb(200, 200, 255);" : "");
+		newItem.closeBtn->setPixmap(QPixmap("Resources/closeBtn.png"));
+		newItem.closeBtn->setCursor(Qt::PointingHandCursor);
+		ui.layerTable->setCellWidget(i, 1, newItem.closeBtn);
+		connect(newItem.closeBtn, SIGNAL(clicked()), closeSignalMapper2d, SLOT(map()));
+		closeSignalMapper2d->setMapping(newItem.closeBtn, i);
+
+		layer2dItems.push_back(newItem);
 	}
 }
 
@@ -442,28 +491,8 @@ void Viewer::onPickAll() {
 	viewer3d->updateView();
 }
 
-void Viewer::onOpenDSAFile() {
-	QString fileToOpen = QFileDialog::getOpenFileName(this, "Open", "D:/Data/", "Dicom(*.*)");
-	if (!fileToOpen.size())
-		return;
-
-	viewer3d->dsa.readFromDSADicom(fileToOpen.toStdString());
-	ui.frameSlider->setMinimum(1);
-	ui.frameSlider->setMaximum(viewer3d->dsa.nz);
-	ui.frameSlider->setValue(1);
-	ui.frameVal->setText(QString::number(1));
-	viewer3d->dsa_frame = ui.frameSlider->value() - 1;
-	viewer3d->updateView();
-}
-
 void Viewer::onGenerateCamera() {
-	viewer3d->dsa_frame = -1;
+	// TODO
 	ui.tabWidget1->removeTab(1);
-	viewer3d->updateView();
-}
-
-void Viewer::updateFrame(int val) {
-	ui.frameVal->setText(QString::number(val));
-	viewer3d->dsa_frame = ui.frameSlider->value() - 1;
 	viewer3d->updateView();
 }

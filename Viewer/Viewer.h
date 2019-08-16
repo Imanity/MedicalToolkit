@@ -3,6 +3,7 @@
 #include <QSignalMapper>
 #include <QCheckBox>
 #include <QLabel>
+#include <QSlider>
 
 #include <QtWidgets/QMainWindow>
 #include "ui_Viewer.h"
@@ -16,6 +17,12 @@ struct LayerItem {
 	QCheckBox *checkBox;
 	ClickableLabel *colorLabel;
 	ClickableLabel *label;
+	ClickableLabel *closeBtn;
+};
+
+struct Layer2DItem {
+	ClickableLabel *label;
+	QSlider *slider;
 	ClickableLabel *closeBtn;
 };
 
@@ -33,6 +40,8 @@ public slots:
 	void onOpenNiftiFile();
 	// 导出Nifti文件
 	void onSaveNiftiFile();
+	// 打开DSA文件
+	void onOpenDSAFile();
 	// 打开血管增强对话框
 	void onExtractVessel();
 	// 打开体数据选取标签页
@@ -45,6 +54,9 @@ public slots:
 	void setCurrentLayer(int id);
 	// 删除图层
 	void deleteLayer(int id);
+
+	// ========================== 显示2D图层 =============================
+
 
 	// ========================== 绘制属性 =============================
 	// 更新是否显示坐标轴
@@ -82,12 +94,8 @@ public slots:
 	void onPickAll();
 
 	// ========================== 手动配准标签页 =============================
-	// 打开DSA文件
-	void onOpenDSAFile();
 	// 生成手动配准结果
 	void onGenerateCamera();
-	// 调整显示帧
-	void updateFrame(int);
 
 	// ========================== 血管增强 =============================
 	// 血管增强
@@ -102,6 +110,8 @@ private:
 	void updateLayers();
 	// 更新图层详细信息
 	void updateLayerDetail();
+	// 更新所有2D图层信息
+	void updateLayers2d();
 
 private:
 	Ui::ViewerClass ui;
@@ -112,8 +122,12 @@ private:
 	QSignalMapper *visibleSignalMapper;
 	QSignalMapper *colorSignalMapper;
 	QSignalMapper *closeSignalMapper;
+	QSignalMapper *selectSignalMapper2d;
+	QSignalMapper *closeSignalMapper2d;
 	std::vector<LayerItem> layerItems;
+	std::vector<Layer2DItem> layer2dItems;
 	int currentLayerId = 0;
+	int currentLayer2dId = 0;
 	int pickedLayerId = 0;
 	QWidget *pageDSAManualRegister;
 	QWidget *pagePicking;

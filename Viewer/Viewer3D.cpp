@@ -161,15 +161,18 @@ void Viewer3D::updateView() {
 		this->renderer->AddActor(actor_transverse);
 	}
 
-	if (dsa_frame >= 0) {
+	for (int i = 0; i < dsaVisible.size(); ++i) {
+		if (!dsaVisible[i] || dsaFrames[i] < 0 || dsaFrames[i] >= dsaImages[i].nz)
+			continue;
+
 		vtkSmartPointer<vtkImageData> dsaImage = vtkSmartPointer<vtkImageData>::New();
-		dsaImage->SetDimensions(dsa.nx, dsa.ny, 1);
+		dsaImage->SetDimensions(dsaImages[i].nx, dsaImages[i].ny, 1);
 		dsaImage->AllocateScalars(VTK_UNSIGNED_CHAR, 3);
-		int basePtr = dsa_frame * dsa.nx * dsa.ny;
-		for (unsigned int x = 0; x < dsa.nx; x++) {
-			for (unsigned int y = 0; y < dsa.ny; y++) {
+		int basePtr = dsaFrames[i] * dsaImages[i].nx * dsaImages[i].ny;
+		for (unsigned int x = 0; x < dsaImages[i].nx; x++) {
+			for (unsigned int y = 0; y < dsaImages[i].ny; y++) {
 				unsigned char* pixel = static_cast<unsigned char*>(dsaImage->GetScalarPointer(x, y, 0));
-				pixel[0] = pixel[1] = pixel[2] = dsa.data[basePtr + (dsa.ny - y - 1) * dsa.nx + x];
+				pixel[0] = pixel[1] = pixel[2] = dsaImages[i].data[basePtr + (dsaImages[i].ny - y - 1) * dsaImages[i].nx + x];
 			}
 		}
 		dsaImage->Modified();
@@ -222,6 +225,13 @@ void Viewer3D::deleteVolume(int idx) {
 	WindowCenter.erase(WindowCenter.begin() + idx);
 	color.erase(color.begin() + idx);
 	title.erase(title.begin() + idx);
+}
+
+void Viewer3D::addDSAImage(VolumeData<short> v, QString title) {
+	dsaImages.push_back(v);
+	dsaTitles.push_back(title);
+	dsaVisible.push_back(true);
+	dsaFrames.push_back(0);
 }
 
 vtkSmartPointer<vtkPolyData> Viewer3D::isoSurface(VolumeData<short> &v, int isoValue, bool skipConnectivityFilter) {
