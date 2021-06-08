@@ -66,6 +66,9 @@
     <ClCompile Include="Widgets\ClickableLabel.cpp">
       <Filter>Source Files\Widgets</Filter>
     </ClCompile>
+    <ClCompile Include="ViewerDSA.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="Viewer.h">
@@ -86,6 +89,9 @@
     <QtMoc Include="Widgets\ClickableLabel.h">
       <Filter>Header Files\Widgets</Filter>
     </QtMoc>
+    <QtMoc Include="ViewerDSA.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
   </ItemGroup>
   <ItemGroup>
     <QtUic Include="Viewer.ui">
@@ -99,6 +105,9 @@
     </QtUic>
     <QtUic Include="Dialogs\DialogVesselExtractor.ui">
       <Filter>Form Files\Dialogs</Filter>
+    </QtUic>
+    <QtUic Include="ViewerDSA.ui">
+      <Filter>Form Files</Filter>
     </QtUic>
   </ItemGroup>
   <ItemGroup>

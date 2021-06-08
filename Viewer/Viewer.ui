@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Viewer</string>
+   <string>CT-DSA图像配准软件</string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QHBoxLayout" name="centralLayout" stretch="2,6,2">
@@ -285,6 +285,46 @@
           </item>
          </layout>
         </widget>
+        <widget class="QWidget" name="PageDisplayDSA">
+         <attribute name="title">
+          <string>显示DSA</string>
+         </attribute>
+         <layout class="QGridLayout" name="gridLayout_3">
+          <item row="1" column="1">
+           <layout class="QVBoxLayout" name="image2dLayout"/>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="layer2dNameLabel">
+            <property name="text">
+             <string>图像名：</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLineEdit" name="layer2dName"/>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="image2dLabel">
+            <property name="text">
+             <string>图像：</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <spacer name="verticalSpacer_4">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </widget>
         <widget class="QWidget" name="PagePicking">
          <attribute name="title">
           <string>体数据拾取</string>
@@ -326,14 +366,14 @@
           </item>
          </layout>
         </widget>
-        <widget class="QWidget" name="PageManualDSARegister">
+        <widget class="QWidget" name="PageCTDSARegister">
          <property name="enabled">
           <bool>true</bool>
          </property>
          <attribute name="title">
-          <string>手动DSA配准</string>
+          <string>CT-DSA配准</string>
          </attribute>
-         <layout class="QGridLayout" name="transformLayout" columnstretch="1,0">
+         <layout class="QGridLayout" name="transformLayout" columnstretch="1">
           <property name="leftMargin">
            <number>5</number>
           </property>
@@ -346,7 +386,7 @@
           <property name="bottomMargin">
            <number>5</number>
           </property>
-          <item row="2" column="0">
+          <item row="5" column="0">
            <spacer name="verticalSpacer_2">
             <property name="orientation">
              <enum>Qt::Vertical</enum>
@@ -360,9 +400,30 @@
            </spacer>
           </item>
           <item row="0" column="0">
-           <widget class="QPushButton" name="generateCameraBtn">
+           <widget class="QPushButton" name="openDSAFrontBtn">
             <property name="text">
-             <string>生成摄像机参数</string>
+             <string>选择正面DSA图像</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QPushButton" name="openDSARightBtn">
+            <property name="text">
+             <string>选择右侧DSA图像</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QPushButton" name="registrationBtn">
+            <property name="text">
+             <string>配准</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QPushButton" name="fusionBtn">
+            <property name="text">
+             <string>融合</string>
             </property>
            </widget>
           </item>
@@ -647,7 +708,7 @@
   </action>
   <action name="actionManualRegisterDSA">
    <property name="text">
-    <string>手动DSA配准</string>
+    <string>CT-DSA配准</string>
    </property>
   </action>
   <action name="actionLaplacianSmooth">

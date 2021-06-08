@@ -25,6 +25,7 @@
 #include <vtkLookupTable.h>
 #include <vtkFloatArray.h>
 #include <vtkCellData.h>
+#include <vtkPointData.h>
 
 Viewer3D::Viewer3D(QWidget *parent) : QVTKWidget(parent) {
 	ui.setupUi(this);
@@ -97,17 +98,45 @@ void Viewer3D::updateView() {
 			if (!visible[i])
 				continue;
 
+			if (title[i] == QString("Output")) {
+				vtkSmartPointer<vtkFloatArray> scalars = vtkSmartPointer<vtkFloatArray>::New();
+				for (int j = 0; j < meshes[i]->GetNumberOfPoints(); ++j) {
+					double p[3];
+					meshes[i]->GetPoint(j, p);
+					bool isPaint = false;
+					int r = 1;
+					for (int x = -r; x <= r; ++x) for (int y = -r; y <= r; ++y) for (int z = -r; z <= r; ++z) {
+						isPaint |= volumes[i].at((p[0] + x) / volumes[i].dx, (p[1] + y) / volumes[i].dy, (p[2] + z) / volumes[i].dz) & (1 << currentFrame);
+					}
+					scalars->InsertNextTuple1(isPaint ? 0 : 1);
+				}
+				meshes[i]->GetPointData()->SetScalars(scalars);
+			}
+
+			vtkSmartPointer<vtkLookupTable> color_table = vtkSmartPointer<vtkLookupTable>::New();
+			color_table->SetNumberOfColors(2);
+			color_table->SetTableValue(0, 1.0, 0.1, 0.0);
+			color_table->SetTableValue(1, 0.2, 0.2, 0.2);
+			color_table->Build();
+
 			vtkSmartPointer<vtkPolyDataMapper> meshMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
 			meshMapper->SetInputData(meshes[i]);
-			meshMapper->ScalarVisibilityOff();
+			if (title[i] == QString("Output")) {
+				meshMapper->SetScalarRange(0, 1);
+				meshMapper->SetLookupTable(color_table);
+			} else {
+				meshMapper->ScalarVisibilityOff();
+			}
 
 			vtkSmartPointer<vtkActor> meshActor = vtkSmartPointer<vtkActor>::New();
 			meshActor->SetMapper(meshMapper);
-			meshActor->GetProperty()->SetColor((double)color[i].red() / 255.0, (double)color[i].green() / 255.0, (double)color[i].blue() / 255.0);
-			meshActor->GetProperty()->SetOpacity((double)color[i].alpha() / 255.0);
-			meshActor->GetProperty()->SetAmbient(ambient);
-			meshActor->GetProperty()->SetDiffuse(diffuse);
-			meshActor->GetProperty()->SetSpecular(specular);
+			if (title[i] != QString("Output")) {
+				meshActor->GetProperty()->SetColor((double)color[i].red() / 255.0, (double)color[i].green() / 255.0, (double)color[i].blue() / 255.0);
+				meshActor->GetProperty()->SetOpacity((double)color[i].alpha() / 255.0);
+				meshActor->GetProperty()->SetAmbient(ambient);
+				meshActor->GetProperty()->SetDiffuse(diffuse);
+				meshActor->GetProperty()->SetSpecular(specular);
+			}
 
 			this->renderer->AddActor(meshActor);
 		}
@@ -161,36 +190,6 @@ void Viewer3D::updateView() {
 		this->renderer->AddActor(actor_transverse);
 	}
 
-	for (int i = 0; i < dsaVisible.size(); ++i) {
-		if (!dsaVisible[i] || dsaFrames[i] < 0 || dsaFrames[i] >= dsaImages[i].nz)
-			continue;
-
-		vtkSmartPointer<vtkImageData> dsaImage = vtkSmartPointer<vtkImageData>::New();
-		dsaImage->SetDimensions(dsaImages[i].nx, dsaImages[i].ny, 1);
-		dsaImage->AllocateScalars(VTK_UNSIGNED_CHAR, 3);
-		int basePtr = dsaFrames[i] * dsaImages[i].nx * dsaImages[i].ny;
-		for (unsigned int x = 0; x < dsaImages[i].nx; x++) {
-			for (unsigned int y = 0; y < dsaImages[i].ny; y++) {
-				unsigned char* pixel = static_cast<unsigned char*>(dsaImage->GetScalarPointer(x, y, 0));
-				pixel[0] = pixel[1] = pixel[2] = dsaImages[i].data[basePtr + (dsaImages[i].ny - y - 1) * dsaImages[i].nx + x];
-			}
-		}
-		dsaImage->Modified();
-
-		vtkSmartPointer<vtkImageMapper> imageMapper = vtkSmartPointer<vtkImageMapper>::New();
-		imageMapper->SetInputData(dsaImage);
-		imageMapper->SetColorWindow(255);
-		imageMapper->SetColorLevel(127.5);
-
-		vtkSmartPointer<vtkActor2D> actor_dsa = vtkSmartPointer<vtkActor2D>::New();
-		actor_dsa->SetMapper(imageMapper);
-		actor_dsa->SetPosition(0, 0);
-		actor_dsa->GetProperty()->SetOpacity(0.1);
-		actor_dsa->GetProperty()->SetDisplayLocationToBackground();
-
-		this->renderer->AddActor2D(actor_dsa);
-	}
-
 	if (isFirstRead && volumes.size()) {
 		this->renderer->ResetCamera();
 		isFirstRead = false;
@@ -209,9 +208,9 @@ void Viewer3D::addVolume(VolumeData<short> v, QString title) {
 	color.push_back(QColor(255, 255, 255, 255));
 	visible.push_back(true);
 
-	lenX = (v.dx * v.nx) > lenX ? (v.dx * v.nx) : lenX;
-	lenY = (v.dy * v.ny) > lenY ? (v.dy * v.ny) : lenY;
-	lenZ = (v.dz * v.nz) > lenZ ? (v.dz * v.nz) : lenZ;
+	lenX = ((double)v.dx * v.nx) > lenX ? ((double)v.dx * v.nx) : lenX;
+	lenY = ((double)v.dy * v.ny) > lenY ? ((double)v.dy * v.ny) : lenY;
+	lenZ = ((double)v.dz * v.nz) > lenZ ? ((double)v.dz * v.nz) : lenZ;
 }
 
 void Viewer3D::deleteVolume(int idx) {
@@ -230,8 +229,13 @@ void Viewer3D::deleteVolume(int idx) {
 void Viewer3D::addDSAImage(VolumeData<short> v, QString title) {
 	dsaImages.push_back(v);
 	dsaTitles.push_back(title);
-	dsaVisible.push_back(true);
-	dsaFrames.push_back(0);
+}
+
+void Viewer3D::deleteDSAImage(int idx) {
+	if (idx < 0 || idx >= dsaImages.size())
+		return;
+	dsaImages.erase(dsaImages.begin() + idx);
+	dsaTitles.erase(dsaTitles.begin() + idx);
 }
 
 vtkSmartPointer<vtkPolyData> Viewer3D::isoSurface(VolumeData<short> &v, int isoValue, bool skipConnectivityFilter) {
@@ -340,7 +344,7 @@ cv::Mat Viewer3D::generateSlice2d(int plane, double pos, int scale) {
 				if (xIndex >= volumes[i].nx || yIndex >= volumes[i].ny || zIndex >= volumes[i].nz)
 					continue;
 				short val = volumes[i].trilinear(xIndex, yIndex, zIndex);
-				double op = (double)(val - WindowCenter[i] + WindowWidth[i] / 2.0) / WindowWidth[i];
+				double op = (double)((double)val - WindowCenter[i] + WindowWidth[i] / 2.0) / WindowWidth[i];
 				op = op < 0 ? 0 : op;
 				op = op > 1 ? 1 : op;
 				r += op * color[i].red();
@@ -409,7 +413,7 @@ vtkSmartPointer<vtkImageData> Viewer3D::generateSlice2d(int plane, double pos) {
 			if (xIndex >= volumes[i].nx || yIndex >= volumes[i].ny || zIndex >= volumes[i].nz)
 				continue;
 			short val = volumes[i].trilinear(xIndex, yIndex, zIndex);
-			double op = (double)(val - WindowCenter[i] + WindowWidth[i] / 2.0) / WindowWidth[i];
+			double op = (double)((double)val - WindowCenter[i] + WindowWidth[i] / 2.0) / WindowWidth[i];
 			op = op < 0 ? 0 : op;
 			op = op > 1 ? 1 : op;
 			r += op * color[i].red();
@@ -456,4 +460,144 @@ void Viewer3D::setIsoValue(int i, int v) {
 	isoValue[i] = v;
 	meshes[i] = isoSurface(volumes[i], v);
 	updateView();
+}
+
+cv::Mat Viewer3D::generateDSA2d(int image_idx, int pos_idx) {
+	if (image_idx < 0 || image_idx >= dsaImages.size()) {
+		cv::Mat blank_img;
+		return blank_img;
+	}
+	if (pos_idx < 0 || pos_idx >= dsaImages[image_idx].nz) {
+		cv::Mat blank_img;
+		return blank_img;
+	}
+
+	cv::Mat data_0(dsaImages[image_idx].ny, dsaImages[image_idx].nx, CV_8UC1);
+	cv::Mat data(dsaImages[image_idx].ny, dsaImages[image_idx].nx, CV_8UC1);
+
+	for (int x = 0; x < dsaImages[image_idx].nx; ++x) for (int y = 0; y < dsaImages[image_idx].ny; ++y) {
+		data.at<uchar>(y, x) = dsaImages[image_idx].at(x, y, pos_idx);
+		data_0.at<uchar>(y, x) = dsaImages[image_idx].at(x, y, 0);
+	}
+
+	int left = 0, right = data_0.cols - 1, top = 0, bottom = data_0.rows - 1;
+	while (left < data_0.cols) {
+		bool is_blank = true;
+		for (int i = 0; i < data_0.rows; ++i) {
+			if (data_0.at<uchar>(i, left)) {
+				is_blank = false;
+				break;
+			}
+		}
+		if (!is_blank) {
+			break;
+		}
+		left++;
+	}
+	while (right >= 0) {
+		bool is_blank = true;
+		for (int i = 0; i < data_0.rows; ++i) {
+			if (data_0.at<uchar>(i, right)) {
+				is_blank = false;
+				break;
+			}
+		}
+		if (!is_blank) {
+			break;
+		}
+		right--;
+	}
+	while (top < data_0.rows) {
+		bool is_blank = true;
+		for (int i = 0; i < data_0.cols; ++i) {
+			if (data_0.at<uchar>(top, i)) {
+				is_blank = false;
+				break;
+			}
+		}
+		if (!is_blank) {
+			break;
+		}
+		top++;
+	}
+	while (bottom >= 0) {
+		bool is_blank = true;
+		for (int i = 0; i < data_0.cols; ++i) {
+			if (data_0.at<uchar>(bottom, i)) {
+				is_blank = false;
+				break;
+			}
+		}
+		if (!is_blank) {
+			break;
+		}
+		bottom--;
+	}
+
+	data = data(cv::Rect(left, top, right - left, bottom - top));
+
+	for (int i = 0; i < data.cols; ++i) for (int j = 0; j < data.rows; ++j) {
+		data.at<uchar>(j, i) = data.at<uchar>(j, i) < 100 ? 255 : 0;
+	}
+
+	cv::Mat data_filtered = data.clone();
+
+	for (int i = 0; i < data_filtered.cols; ++i) for (int j = 0; j < data_filtered.rows; ++j) {
+		int num = 0, sum = 0;
+		for (int x = -1; x <= 1; ++x) for (int y = -1; y <= 1; ++y) {
+			if (i + x < 0 || i + x >= data_filtered.cols || j + y < 0 || j + y >= data_filtered.rows)
+				continue;
+			sum++;
+			if (data.at<uchar>(j + y, i + x))
+				num++;
+		}
+		if (num >= sum / 2)
+			data_filtered.at<uchar>(j, i) = 255;
+		else
+			data_filtered.at<uchar>(j, i) = 0;
+	}
+	return data_filtered;
+}
+
+cv::Mat Viewer3D::generateDSA2d(int image_idx, int pos_idx, int scale) {
+	if (image_idx < 0 || image_idx >= dsaImages.size()) {
+		cv::Mat blank_img(scale, scale, CV_8UC3);
+		for (int i = 0; i < scale; ++i) for (int j = 0; j < scale; ++j)
+			blank_img.at<cv::Vec3b>(i, j)[0] = blank_img.at<cv::Vec3b>(i, j)[1] = blank_img.at<cv::Vec3b>(i, j)[2] = 0;
+		return blank_img;
+	}
+	if (pos_idx < 0 || pos_idx >= dsaImages[image_idx].nz) {
+		cv::Mat blank_img(scale, scale, CV_8UC3);
+		for (int i = 0; i < scale; ++i) for (int j = 0; j < scale; ++j)
+			blank_img.at<cv::Vec3b>(i, j)[0] = blank_img.at<cv::Vec3b>(i, j)[1] = blank_img.at<cv::Vec3b>(i, j)[2] = 0;
+		return blank_img;
+	}
+	
+	int xMax = 0, yMax = 0;
+	double spacing = 1.0;
+
+	double dsa_lenX = (double)dsaImages[image_idx].dx * dsaImages[image_idx].nx;
+	double dsa_lenY = (double)dsaImages[image_idx].dy * dsaImages[image_idx].ny;
+
+	xMax = (double)scale;
+	yMax = (double)scale * dsa_lenY / dsa_lenX;
+	spacing = (double)dsa_lenX / scale;
+
+	cv::Mat img(yMax, xMax, CV_8UC3);
+	for (int y = 0; y < yMax; ++y) for (int x = 0; x < xMax; ++x) {
+		int xIndex = (double)spacing * x / dsaImages[image_idx].dx;
+		int yIndex = (double)spacing * y / dsaImages[image_idx].dy;
+		short val_l_t = dsaImages[image_idx].at(xIndex, yIndex, pos_idx);
+		short val_l_b = dsaImages[image_idx].at(xIndex, yIndex + 1, pos_idx);
+		short val_r_t = dsaImages[image_idx].at(xIndex + 1, yIndex, pos_idx);
+		short val_r_b = dsaImages[image_idx].at(xIndex + 1, yIndex + 1, pos_idx);
+		double lr = (double)spacing * x / dsaImages[image_idx].dx - xIndex;
+		double tb = (double)spacing * y / dsaImages[image_idx].dy - yIndex;
+		short val_l = (1.0 - tb) * val_l_t + tb * val_l_b;
+		short val_r = (1.0 - tb) * val_r_t + tb * val_r_b;
+		short val = (1.0 - lr) * val_l + lr * val_r;
+		img.at<cv::Vec3b>(y, x)[0] = img.at<cv::Vec3b>(y, x)[1] = img.at<cv::Vec3b>(y, x)[2] = val;
+	}
+
+	return img;
 }

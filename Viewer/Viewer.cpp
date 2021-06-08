@@ -4,12 +4,16 @@
 
 #include "../VolumeData/VolumeData.h"
 #include "../VesselExtract/VesselExtract.h"
+#include "../Registration_CT_DSA/Reg.h"
 
 #include <QFileDialog>
 #include <QSizePolicy>
+#include <QDebug>
 
 #include <vtkCellData.h>
 #include <vtkMath.h>
+
+#define PI 3.1415927
 
 Viewer::Viewer(QWidget *parent)	: QMainWindow(parent) {
 	ui.setupUi(this);
@@ -24,6 +28,9 @@ Viewer::Viewer(QWidget *parent)	: QMainWindow(parent) {
 	viewer_front = new Viewer2D(SAGITTAL_PLANE, viewer3d, this);
 	ui.sliceLayout3->addWidget(viewer_front);
 
+	viewerDSA = new ViewerDSA(viewer3d, this);
+	ui.image2dLayout->addWidget(viewerDSA);
+
 	ui.layerTable->setRowCount(0);
 	ui.layerTable->setColumnCount(4);
 	ui.layerTable->setShowGrid(false);
@@ -31,8 +38,15 @@ Viewer::Viewer(QWidget *parent)	: QMainWindow(parent) {
 	ui.layerTable->verticalHeader()->setVisible(false);
 	ui.layerTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
+	ui.layer2dTable->setRowCount(0);
+	ui.layer2dTable->setColumnCount(2);
+	ui.layer2dTable->setShowGrid(false);
+	ui.layer2dTable->horizontalHeader()->setVisible(false);
+	ui.layer2dTable->verticalHeader()->setVisible(false);
+	ui.layer2dTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+
 	visibleSignalMapper = new QSignalMapper(this);
-	colorSignalMapper = new QSignalMapper(this);
+	selectSignalMapper = new QSignalMapper(this);
 	closeSignalMapper = new QSignalMapper(this);
 
 	selectSignalMapper2d = new QSignalMapper(this);
@@ -48,10 +62,14 @@ Viewer::Viewer(QWidget *parent)	: QMainWindow(parent) {
 	ui.layerTable->setColumnWidth(2, 100);
 	ui.layerTable->setColumnWidth(3, 25);
 
+	ui.layer2dTable->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	ui.layer2dTable->setColumnWidth(0, 150);
+	ui.layer2dTable->setColumnWidth(1, 25);
+
 	pagePicking = ui.PagePicking;
-	pageDSAManualRegister = ui.PageManualDSARegister;
+	pageCTDSARegister = ui.PageCTDSARegister;
+	ui.tabWidget1->removeTab(3);
 	ui.tabWidget1->removeTab(2);
-	ui.tabWidget1->removeTab(1);
 
 	connect(ui.actionOpenDicom, SIGNAL(triggered()), this, SLOT(onOpenDicomFile()));
 	connect(ui.actionOpenNifti, SIGNAL(triggered()), this, SLOT(onOpenNiftiFile()));
@@ -66,8 +84,10 @@ Viewer::Viewer(QWidget *parent)	: QMainWindow(parent) {
 	connect(ui.renderComboBox, SIGNAL(currentIndexChanged(int)), viewer3d, SLOT(setRenderMode(int)));
 	connect(visibleSignalMapper, SIGNAL(mapped(int)), viewer3d, SLOT(setVisible(int)));
 	connect(visibleSignalMapper, SIGNAL(mapped(int)), this, SLOT(updateAllViewers()));
-	connect(colorSignalMapper, SIGNAL(mapped(int)), this, SLOT(setCurrentLayer(int)));
+	connect(selectSignalMapper, SIGNAL(mapped(int)), this, SLOT(setCurrentLayer(int)));
 	connect(closeSignalMapper, SIGNAL(mapped(int)), this, SLOT(deleteLayer(int)));
+	connect(selectSignalMapper2d, SIGNAL(mapped(int)), this, SLOT(setCurrentLayer2d(int)));
+	connect(closeSignalMapper2d, SIGNAL(mapped(int)), this, SLOT(deleteLayer2d(int)));
 	connect(ui.layerName, SIGNAL(textChanged(QString)), this, SLOT(updateLayerName(QString)));
 	connect(ui.colorR, SIGNAL(sliderReleased()), this, SLOT(updateLayerColor()));
 	connect(ui.colorG, SIGNAL(sliderReleased()), this, SLOT(updateLayerColor()));
@@ -87,7 +107,11 @@ Viewer::Viewer(QWidget *parent)	: QMainWindow(parent) {
 	connect(viewer3d->mouse_style, SIGNAL(pickCell(int)), this, SLOT(onPickedCell(int)));
 	connect(viewer3d->mouse_style, SIGNAL(startPick()), this, SLOT(onStartPickingCell()));
 	connect(viewer3d->mouse_style, SIGNAL(stopPick()), this, SLOT(onStopPickingCell()));
-	connect(ui.generateCameraBtn, SIGNAL(clicked()), this, SLOT(onGenerateCamera()));
+	connect(ui.layer2dName, SIGNAL(textChanged(QString)), this, SLOT(updateLayer2dName(QString)));
+	connect(ui.openDSAFrontBtn, SIGNAL(clicked()), this, SLOT(onOpenDSAFront()));
+	connect(ui.openDSARightBtn, SIGNAL(clicked()), this, SLOT(onOpenDSARight()));
+	connect(ui.registrationBtn, SIGNAL(clicked()), this, SLOT(onRegistration()));
+	connect(ui.fusionBtn, SIGNAL(clicked()), this, SLOT(onFusion()));
 }
 
 void Viewer::onOpenDicomFile() {
@@ -152,7 +176,7 @@ void Viewer::onOpenDSAFile() {
 	VolumeData<short> v;
 	v.readFromDSADicom(fileToOpen.toStdString());
 	
-	viewer3d->addDSAImage(v, QString("Image ") + QString::number(n + 1));
+	viewer3d->addDSAImage(v, QString("DSA ") + QString::number(n + 1));
 	viewer3d->updateView();
 
 	updateLayers2d();
@@ -165,7 +189,7 @@ void Viewer::onExtractVessel() {
 
 void Viewer::onVolumePicking() {
 	ui.tabWidget1->addTab(pagePicking, QString::fromLocal8Bit("体数据拾取"));
-	ui.tabWidget1->setCurrentIndex(1);
+	ui.tabWidget1->setCurrentIndex(2);
 
 	int n = viewer3d->volumes.size();
 	VolumeData<short> v(viewer3d->volumes[currentLayerId].nx, viewer3d->volumes[currentLayerId].ny, viewer3d->volumes[currentLayerId].nz, 
@@ -183,8 +207,8 @@ void Viewer::onVolumePicking() {
 }
 
 void Viewer::onManualRegisterDSA() {
-	ui.tabWidget1->addTab(pageDSAManualRegister, QString::fromLocal8Bit("手动DSA配准"));
-	ui.tabWidget1->setCurrentIndex(1);
+	ui.tabWidget1->addTab(pageCTDSARegister, QString::fromLocal8Bit("CT-DSA配准"));
+	ui.tabWidget1->setCurrentIndex(2);
 }
 
 void Viewer::updateLayers() {
@@ -208,16 +232,16 @@ void Viewer::updateLayers() {
 		newItem.colorLabel->setStyleSheet("QLabel { border: 1px solid black; background-color : " + viewer3d->color[i].name() + "; }");
 		newItem.colorLabel->setCursor(Qt::PointingHandCursor);
 		ui.layerTable->setCellWidget(i, 1, newItem.colorLabel);
-		connect(newItem.colorLabel, SIGNAL(clicked()), colorSignalMapper, SLOT(map()));
-		colorSignalMapper->setMapping(newItem.colorLabel, i);
+		connect(newItem.colorLabel, SIGNAL(clicked()), selectSignalMapper, SLOT(map()));
+		selectSignalMapper->setMapping(newItem.colorLabel, i);
 
 		newItem.label = new ClickableLabel(this);
 		newItem.label->setStyleSheet(QString("padding-left: 20px; ") + (currentLayerId == i ? "background-color: rgb(200, 200, 255);" : ""));
 		newItem.label->setText(viewer3d->title[i]);
 		newItem.label->setCursor(Qt::PointingHandCursor);
 		ui.layerTable->setCellWidget(i, 2, newItem.label);
-		connect(newItem.label, SIGNAL(clicked()), colorSignalMapper, SLOT(map()));
-		colorSignalMapper->setMapping(newItem.label, i);
+		connect(newItem.label, SIGNAL(clicked()), selectSignalMapper, SLOT(map()));
+		selectSignalMapper->setMapping(newItem.label, i);
 
 		newItem.closeBtn = new ClickableLabel(this);
 		newItem.closeBtn->setAutoFillBackground(true);
@@ -255,7 +279,7 @@ void Viewer::updateLayers2d() {
 		newItem.closeBtn->setStyleSheet((currentLayer2dId == i) ? "background-color: rgb(200, 200, 255);" : "");
 		newItem.closeBtn->setPixmap(QPixmap("Resources/closeBtn.png"));
 		newItem.closeBtn->setCursor(Qt::PointingHandCursor);
-		ui.layerTable->setCellWidget(i, 1, newItem.closeBtn);
+		ui.layer2dTable->setCellWidget(i, 1, newItem.closeBtn);
 		connect(newItem.closeBtn, SIGNAL(clicked()), closeSignalMapper2d, SLOT(map()));
 		closeSignalMapper2d->setMapping(newItem.closeBtn, i);
 
@@ -265,17 +289,34 @@ void Viewer::updateLayers2d() {
 
 void Viewer::setCurrentLayer(int id) {
 	currentLayerId = id;
+	updateLayers();
 	updateLayerDetail();
 }
 
 void Viewer::deleteLayer(int id) {
-	int n = viewer3d->volumes.size();
 	viewer3d->deleteVolume(id);
 	updateAllViewers();
 	updateLayers();
 }
 
+void Viewer::setCurrentLayer2d(int id) {
+	currentLayer2dId = id;
+	if (selectingDSA == 0) {
+		dsa_front_id = id;
+	} else {
+		dsa_right_id = id;
+	}
+	updateLayers2d();
+	updateLayers2dDetail();
+}
+
+void Viewer::deleteLayer2d(int id) {
+	viewer3d->deleteDSAImage(id);
+	updateLayers2d();
+}
+
 void Viewer::updateLayerDetail() {
+	ui.tabWidget1->setCurrentIndex(0);
 	ui.layerName->setText(viewer3d->title[currentLayerId]);
 	ui.colorR->setValue(viewer3d->color[currentLayerId].red());
 	ui.colorG->setValue(viewer3d->color[currentLayerId].green());
@@ -287,6 +328,15 @@ void Viewer::updateLayerDetail() {
 	ui.windowWidthVal->setText(QString::number(viewer3d->WindowWidth[currentLayerId]));
 	ui.isoValue->setValue(viewer3d->isoValue[currentLayerId]);
 	ui.isoValueVal->setText(QString::number(viewer3d->isoValue[currentLayerId]));
+}
+
+void Viewer::updateLayers2dDetail() {
+	ui.tabWidget1->setCurrentIndex(1);
+	ui.layer2dName->setText(viewer3d->dsaTitles[currentLayer2dId]);
+
+	viewerDSA->image_idx = currentLayer2dId;
+	viewerDSA->pos_idx = 0;
+	viewerDSA->updateView();
 }
 
 void Viewer::updateAllViewers() {
@@ -491,8 +541,78 @@ void Viewer::onPickAll() {
 	viewer3d->updateView();
 }
 
-void Viewer::onGenerateCamera() {
-	// TODO
-	ui.tabWidget1->removeTab(1);
-	viewer3d->updateView();
+void Viewer::updateLayer2dName(QString str) {
+	if (currentLayer2dId < 0 || currentLayer2dId >= viewer3d->dsaImages.size())
+		return;
+	viewer3d->dsaTitles[currentLayer2dId] = str;
+	updateLayers2d();
+}
+
+void Viewer::onOpenDSAFront() {
+	selectingDSA = 0;
+	ui.tabWidget1->setCurrentIndex(1);
+	ui.tabWidget->setCurrentIndex(1);
+}
+
+void Viewer::onOpenDSARight() {
+	selectingDSA = 1;
+	ui.tabWidget1->setCurrentIndex(1);
+	ui.tabWidget->setCurrentIndex(1);
+}
+
+void Viewer::selectDSAPos(int pos) {
+	if (selectingDSA == 0) {
+		dsa_front_pos = pos;
+	}
+	else {
+		dsa_right_pos = pos;
+	}
+}
+
+void Viewer::onRegistration() {
+	cv::Mat Y_front = viewer3d->generateDSA2d(dsa_front_id, dsa_front_pos);
+	cv::Mat Y_right = viewer3d->generateDSA2d(dsa_right_id, dsa_right_pos);
+
+	Eigen::Vector3d R_front, R_right;
+	R_front << PI * 0.7, 0, 0;
+	R_right << PI * 0.5, -PI / 12, -PI / 2;
+
+	Eigen::Vector4d var_front, var_right;
+	var_front << viewer3d->dsaImages[dsa_front_id].dx, viewer3d->dsaImages[dsa_front_id].dy,
+		viewer3d->dsaImages[dsa_front_id].distance_source_detector, viewer3d->dsaImages[dsa_front_id].distance_source_patient;
+	var_right << viewer3d->dsaImages[dsa_right_id].dx, viewer3d->dsaImages[dsa_right_id].dy,
+		viewer3d->dsaImages[dsa_right_id].distance_source_detector, viewer3d->dsaImages[dsa_right_id].distance_source_patient;
+
+	srand(1);
+	Reg reg;
+	reg.solve(viewer3d->volumes[currentLayerId], Y_front, R_front, var_front,
+		viewer3d->title[currentLayerId].toStdString(), (viewer3d->dsaTitles[dsa_front_id] + "[" + QString::number(dsa_front_pos) + "]").toStdString(), "front");
+	reg.solve(viewer3d->volumes[currentLayerId], Y_right, R_right, var_right,
+		viewer3d->title[currentLayerId].toStdString(), (viewer3d->dsaTitles[dsa_right_id] + "[" + QString::number(dsa_right_pos) + "]").toStdString(), "right");
+}
+
+void Viewer::onFusion() {
+	std::vector<cv::Mat> front, right;
+	for (int i = 0; i < viewer3d->dsaImages[dsa_front_id].nz; ++i) {
+		front.push_back(viewer3d->generateDSA2d(dsa_front_id, i));
+	}
+	for (int i = 0; i < viewer3d->dsaImages[dsa_right_id].nz; ++i) {
+		right.push_back(viewer3d->generateDSA2d(dsa_right_id, i));
+	}
+
+	Reg reg;
+	VolumeData<short> V = reg.fuse(viewer3d->volumes[currentLayerId], front, right, 
+		viewer3d->dsaImages[dsa_front_id].dx, viewer3d->dsaImages[dsa_front_id].dy);
+	
+	viewer3d->title.push_back(QString("Output"));
+	viewer3d->volumes.push_back(V);
+	viewer3d->isoValue.push_back(200);
+	viewer3d->meshes.push_back(viewer3d->meshes[currentLayerId]);
+	viewer3d->WindowCenter.push_back(200);
+	viewer3d->WindowWidth.push_back(800);
+	viewer3d->color.push_back(QColor(255, 20, 20, 255));
+	viewer3d->visible.push_back(false);
+
+	updateAllViewers();
+	updateLayers();
 }

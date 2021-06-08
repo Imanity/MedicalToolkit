@@ -63,6 +63,9 @@ public:
 	int nx, ny, nz;
 	float dx, dy, dz;
 	int nvox;
+
+	double distance_source_detector;
+	double distance_source_patient;
 };
 
 template <class T>
@@ -111,6 +114,8 @@ void VolumeData<T>::readFromDSADicom(std::string file_path) {
 	data = new T[nvox];
 	for (int i = 0; i < nvox; ++i)
 		data[i] = dcmData.volume_buf[i];
+	distance_source_detector = dcmData.distance_source_detector;
+	distance_source_patient = dcmData.distance_source_patient;
 }
 
 template <class T>

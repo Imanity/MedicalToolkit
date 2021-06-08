@@ -47,6 +47,8 @@ public:
 	void deleteVolume(int idx);
 	// 添加新DSA图像
 	void addDSAImage(VolumeData<short> v, QString title);
+	// 删除DSA图像
+	void deleteDSAImage(int idx);
 
 	// 生成二维切片视图
 	cv::Mat generateSlice2d(int plane, double pos, int scale);
@@ -55,6 +57,10 @@ public:
 
 	// 等值面提取
 	vtkSmartPointer<vtkPolyData> isoSurface(VolumeData<short> &v, int isoValue, bool skipConnectivityFilter = false);
+
+	// 生成DSA单帧图像
+	cv::Mat generateDSA2d(int image_idx, int pos_idx);
+	cv::Mat generateDSA2d(int image_idx, int pos_idx, int scale);
 
 public slots:
 	// 设定渲染参数
@@ -79,6 +85,7 @@ public:
 	bool axesFlag = true;
 	bool sliceFlag = false;
 	double slicePos[3];
+	int currentFrame = 0;
 
 	vtkSmartPointer<MouseInteractorStyle> mouse_style;
 
@@ -95,7 +102,5 @@ public:
 
 	// 二维DSA数据及显示参数
 	std::vector<VolumeData<short>> dsaImages;
-	std::vector<int> dsaFrames;
-	std::vector<bool> dsaVisible;
 	std::vector<QString> dsaTitles;
 };
